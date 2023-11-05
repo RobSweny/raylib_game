@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "User.h"
+#include "Enemy.h"
 #include "Projectile.h"
 #include <math.h>
 #include <vector>
@@ -9,12 +10,22 @@ Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 std::vector<Projectile> projectiles;
 
-User user = {
+User user =
+{
     .size = 50,
     // users initial position is in the middle of the screen
     .charPosition = { (float) screenSize.x/2, (float) screenSize.y/2 },
     .speed = 4.0F,
     .projectiles = projectiles
+};
+
+
+Enemy easyEnemy =
+{
+    .position = { (float) 100, (float) 100 },
+    .size = 10,
+    .color = GREEN,
+    .speed = 1.0F
 };
 
 int main() {
@@ -33,7 +44,8 @@ int main() {
             ClearBackground(RAYWHITE);
             user.CreateCharacter();
             user.charPosition = user.Controller();
-                
+
+            easyEnemy.CreateEnemy();                
 
             for (size_t i = 0; i < projectiles.size(); ++i)
             {
@@ -41,7 +53,8 @@ int main() {
                 projectiles[i].position.x += projectiles[i].direction.x;
                 projectiles[i].position.y += projectiles[i].direction.y;
                 // Draw projectile
-                DrawCircleV(projectiles[i].position, 5, BLUE);
+                Projectile projectile;
+                projectile.CreateProjectile(projectiles[i].position, 5, BLUE);
             }
                 
         // teardown Canvas
