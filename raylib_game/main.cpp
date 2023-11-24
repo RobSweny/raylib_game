@@ -10,22 +10,15 @@ Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 std::vector<Projectile> projectiles;
 
-User user =
-{
-    .size = 50,
-    // users initial position is in the middle of the screen
-    .charPosition = { (float) screenSize.x/2, (float) screenSize.y/2 },
-    .speed = 4.0F,
-    .projectiles = projectiles
-};
 
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3);
 
 Enemy easyEnemy =
 {
     .position = { (float) 100, (float) 100 },
     .size = 10,
-    .color = GREEN,
-    .speed = 1.0F
+    .speed = 1.0F,
+    .color = GREEN
 };
 
 int main() {
@@ -43,18 +36,16 @@ int main() {
             // Clear canvas to a specific color to avoid flicker
             ClearBackground(RAYWHITE);
             user.CreateCharacter();
-            user.charPosition = user.Controller();
+            user.position = user.Controller();
 
             easyEnemy.CreateEnemy();                
+            easyEnemy.MoveTowards(user.position);
 
-            for (size_t i = 0; i < projectiles.size(); ++i)
+            for (Projectile &projectile : user.projectiles)
             {
-                // Move the projectile based on the direction vector
-                projectiles[i].position.x += projectiles[i].direction.x;
-                projectiles[i].position.y += projectiles[i].direction.y;
-                // Draw projectile
-                Projectile projectile;
-                projectile.CreateProjectile(projectiles[i].position, 5, BLUE);
+                projectile.position.x += projectile.direction.x * projectile.speed;
+                projectile.position.y += projectile.direction.y * projectile.speed;
+                DrawCircleV(projectile.position, 5, projectile.color);
             }
                 
         // teardown Canvas

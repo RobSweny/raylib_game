@@ -11,8 +11,9 @@ struct Projectile
 
     void CreateProjectile(Vector2 position, float speed, Color color)
     {
-        // Draw projectile
-        DrawCircleV(position, speed, color);
+        position = position;
+        speed = speed;
+        color = color;
     }
 
 };
