@@ -2,17 +2,18 @@
 #ifndef ENEMY_H
 #define ENEMY_H
 
-struct Enemy
+struct Enemy : Health
 {
     Vector2 position;
     int size;
     float speed;
     Color color;
+    int maxHealth;
 
+    Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
+            : position(position), size(size), speed(speed), color(color), maxHealth(maxHealth) {}
 
     // https://stackoverflow.com/questions/2625021/game-enemy-move-towards-player
-    //
-
     /// @brief 
     /// @param userPosition 
     void MoveTowards(Vector2 userPosition)

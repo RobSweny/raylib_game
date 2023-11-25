@@ -10,16 +10,10 @@ Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 std::vector<Projectile> projectiles;
 
-
 User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3);
-
-Enemy easyEnemy =
-{
-    .position = { (float) 100, (float) 100 },
-    .size = 10,
-    .speed = 1.0F,
-    .color = GREEN
-};
+Enemy easyEnemy({ (float) 100, (float) 100 }, 10, 1.0F, GREEN, 1);
+Enemy mediumEnemy({ (float) 100, (float) 100 }, 25, 2.0F, GREEN, 3);
+Enemy hardEnemy({ (float) 100, (float) 100 }, 40, 4.0F, GREEN, 5);
 
 int main() {
     // Initialize the Window
@@ -45,7 +39,7 @@ int main() {
             {
                 projectile.position.x += projectile.direction.x * projectile.speed;
                 projectile.position.y += projectile.direction.y * projectile.speed;
-                DrawCircleV(projectile.position, 5, projectile.color);
+                projectile.Draw();
             }
                 
         // teardown Canvas

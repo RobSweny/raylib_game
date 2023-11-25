@@ -61,7 +61,7 @@ struct User : Health
             direction.y *= scaleFactor;
         }
         
-        Projectile newProjectile = { position, direction, 1.0f, RED };
+        Projectile newProjectile = { position, direction, 1.0f, RED, 1 };
         // Push new projectile to the back of the array
         projectiles.push_back(newProjectile);
     }

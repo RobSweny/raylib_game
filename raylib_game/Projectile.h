@@ -8,14 +8,14 @@ struct Projectile
     Vector2 direction;
     float speed;
     Color color;
+    int damage;
 
-    void CreateProjectile(Vector2 position, float speed, Color color)
-    {
-        position = position;
-        speed = speed;
-        color = color;
+    Projectile(Vector2 position, Vector2 direction, float speed, Color color, int damage)
+        : position(position), direction(direction), speed(speed), color(color), damage(damage) {}
+
+    void Draw() const {
+        DrawCircleV(position, 5, color);
     }
-
 };
 
 #endif // PROJECTILE_H
