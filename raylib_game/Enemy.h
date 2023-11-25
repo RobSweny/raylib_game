@@ -8,10 +8,19 @@ struct Enemy : Health
     int size;
     float speed;
     Color color;
+    int currentHealth;
     int maxHealth;
 
     Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
             : position(position), size(size), speed(speed), color(color), maxHealth(maxHealth) {}
+
+
+    void TakeDamage(int damageAmount) {
+        currentHealth -= damageAmount;
+        if (currentHealth <= 0) {
+            
+        }
+    }
 
     // https://stackoverflow.com/questions/2625021/game-enemy-move-towards-player
     /// @brief 

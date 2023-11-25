@@ -9,9 +9,10 @@ struct Projectile
     float speed;
     Color color;
     int damage;
+    int size;
 
-    Projectile(Vector2 position, Vector2 direction, float speed, Color color, int damage)
-        : position(position), direction(direction), speed(speed), color(color), damage(damage) {}
+    Projectile(Vector2 position, Vector2 direction, float speed, Color color, int damage, int size)
+        : position(position), direction(direction), speed(speed), color(color), damage(damage), size(size) {}
 
     void Draw() const {
         DrawCircleV(position, 5, color);

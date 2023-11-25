@@ -14,6 +14,7 @@ struct User : Health
     Vector2 position;
     float speed;
     int maxHealth;
+    int projectileSize;
     // Array of struct Projectile
     std::vector<Projectile> projectiles{};
 
@@ -61,7 +62,7 @@ struct User : Health
             direction.y *= scaleFactor;
         }
         
-        Projectile newProjectile = { position, direction, 1.0f, RED, 1 };
+        Projectile newProjectile = { position, direction, 1.0f, RED, 1, projectileSize };
         // Push new projectile to the back of the array
         projectiles.push_back(newProjectile);
     }

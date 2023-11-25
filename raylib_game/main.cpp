@@ -25,6 +25,7 @@ int main() {
     // The Game Loop
     while (!WindowShouldClose() /*WindowShouldClose returns true if esc is clicked and closes the window*/) {
 
+
         // Setup Canvas
         BeginDrawing();
             // Clear canvas to a specific color to avoid flicker
@@ -35,11 +36,23 @@ int main() {
             easyEnemy.CreateEnemy();                
             easyEnemy.MoveTowards(user.position);
 
+            // Draw projectiles
             for (Projectile &projectile : user.projectiles)
             {
                 projectile.position.x += projectile.direction.x * projectile.speed;
                 projectile.position.y += projectile.direction.y * projectile.speed;
                 projectile.Draw();
+            }
+
+            for (int i = user.projectiles.size() - 1; i >= 0; --i) {
+                if (CheckCollisionCircles(user.projectiles[i].position, user.projectileSize, easyEnemy.position, easyEnemy.size)) {
+                    easyEnemy.TakeDamage(user.projectiles[i].damage);
+                    if (easyEnemy.currentHealth <= 0)
+                    {
+                        easyEnemy.size = 0;
+                    }
+                    user.projectiles.erase(user.projectiles.begin() + i);
+                }
             }
                 
         // teardown Canvas
