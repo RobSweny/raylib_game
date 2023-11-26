@@ -2,6 +2,7 @@
 #include "User.h"
 #include "Enemy.h"
 #include "Projectile.h"
+#include "SoundManagement.h"
 #include <math.h>
 #include <vector>
 
@@ -9,9 +10,13 @@
 Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 std::vector<Enemy> enemies;
+SoundManagement soundManagement;
+
+// bool's to avoid sound repetition
+bool gameOverSoundPlayed = false;
 
 // creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3);
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
 // creating different types of enemies
 Enemy easyEnemy({ (float) 100, (float) 100 }, 10, 1.0F, GREEN, 1);
 Enemy mediumEnemy({ (float) 100, (float) 100 }, 25, 2.0F, ORANGE, 3);
@@ -20,10 +25,9 @@ Enemy hardEnemy({ (float) 100, (float) 100 }, 40, 4.0F, RED, 5);
 int main() {
     // Initialize the Window
     InitWindow(screenSize.x, screenSize.y, "My Game");
-
     // Setting the Frames Per Second
     SetTargetFPS(60);
-
+    soundManagement.PlayGameMusic();
     enemies.push_back(easyEnemy);
     enemies.push_back(mediumEnemy);
 
@@ -36,6 +40,10 @@ int main() {
             ClearBackground(RAYWHITE);
 
             if (user.CheckHealth()) {
+                if (!gameOverSoundPlayed) {
+                    soundManagement.GameOverSounds();
+                    gameOverSoundPlayed = true;
+                }
                 // Display game over message
                 DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
                 EndDrawing();
@@ -51,7 +59,6 @@ int main() {
                 DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
             }
 
-            // easyEnemy.CreateEnemy();
             for (Enemy &enemy : enemies)
             {
                 enemy.CreateEnemy();
@@ -59,6 +66,7 @@ int main() {
 
                 // check collision with user
                 if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                    soundManagement.PlayOuchSound();
                     user.LoseHealth();
                     user.UpdateCooldown();
                 }
@@ -93,10 +101,10 @@ int main() {
                     user.projectiles[i].Draw();
                 }
             }
-                
         // teardown Canvas
         EndDrawing();
     }
+    soundManagement.UnloadSoundManagement();
     CloseWindow();
     return 0;
 }

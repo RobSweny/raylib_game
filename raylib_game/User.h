@@ -5,6 +5,7 @@
 #include <math.h>
 #include <vector>
 #include "raylib.h"
+#include "SoundManagement.h"
 #include "Projectile.h"
 #include "Health.h"
 
@@ -21,10 +22,13 @@ struct User : Health
     float lastHitTime;
     // Array of struct Projectile
     std::vector<Projectile> projectiles{};
+    // Include reference to sound management
+    SoundManagement& soundManagement;
 
-    User(int size, Vector2 position, float speed, int maxHealth) 
+    User(int size, Vector2 position, float speed, int maxHealth, SoundManagement& soundManagement) 
             : Health { maxHealth, maxHealth },
-            size(size), position(position), speed(speed) {
+            size(size), position(position), speed(speed),
+            soundManagement(soundManagement) {
             }
 
     // Creating function for managing the controller
@@ -94,6 +98,8 @@ struct User : Health
             direction.y *= scaleFactor;
         }
         
+        soundManagement.PlayShootSound();
+
         Projectile newProjectile = { position, direction, 1.0f, RED, 1, projectileSize };
         // Push new projectile to the back of the array
         projectiles.push_back(newProjectile);
