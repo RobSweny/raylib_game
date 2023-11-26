@@ -44,6 +44,12 @@ int main() {
             
             user.CreateCharacter();
             user.position = user.Controller();
+            // Draw player lives
+            // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
+            for (int i = 0; i < user.currentHealth; i++) 
+            {
+                DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
+            }
 
             // easyEnemy.CreateEnemy();
             for (Enemy &enemy : enemies)
