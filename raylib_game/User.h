@@ -15,11 +15,17 @@ struct User : Health
     float speed;
     int maxHealth;
     int projectileSize;
+    bool isOnHealthCooldown = false;
+    // 2 second timer from being hit
+    float cooldownTime = 2.0f;
+    float lastHitTime;
     // Array of struct Projectile
     std::vector<Projectile> projectiles{};
 
     User(int size, Vector2 position, float speed, int maxHealth) 
-            : size(size), position(position), speed(speed), maxHealth(maxHealth) {}
+            : Health { maxHealth, maxHealth },
+            size(size), position(position), speed(speed) {
+            }
 
     // Creating function for managing the controller
     Vector2 Controller()
@@ -34,6 +40,32 @@ struct User : Health
         return position;
     }
 
+    // Update cooldown time, this is called when the user has been hit
+    // it is to avoid the collision between enemy and user being called too often
+    void UpdateCooldown() {
+        // check if the bool flag is true
+        if (isOnHealthCooldown) {
+            // get the current time and minus it from the last time the user was hit, check if this is greater than the cooldown time (2 seconds)
+            if (GetTime() - lastHitTime >= cooldownTime) {
+                // if the time is greater than 2 seconds
+                isOnHealthCooldown = false;
+            }
+        }
+    }
+
+    // We have to override LoseHealth from the 'Health' class
+    void LoseHealth() {
+        // if not on health cooldown and the user health is greater than 0
+        if (!isOnHealthCooldown && currentHealth > 0) {
+            // minus the health
+            currentHealth--;
+            // update last hit time to current time
+            lastHitTime = GetTime();
+            // set cooldown to true
+            isOnHealthCooldown = true;
+        }
+    }
+
     // Creating a character
     void CreateCharacter()
     {
@@ -41,7 +73,7 @@ struct User : Health
         DrawCircleV(position, size, MAROON);
     }
 
-    // function
+    // function to shoot a projectile
     void Shoot()
     {
         // Calculate the direction vector from player to mouse when shooting starts

@@ -34,6 +34,14 @@ int main() {
         BeginDrawing();
             // Clear canvas to a specific color to avoid flicker
             ClearBackground(RAYWHITE);
+
+            if (user.CheckHealth()) {
+                // Display game over message
+                DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
+                EndDrawing();
+                continue;  // Skip the rest of the game loop
+            }
+            
             user.CreateCharacter();
             user.position = user.Controller();
 
@@ -41,9 +49,14 @@ int main() {
             for (Enemy &enemy : enemies)
             {
                 enemy.CreateEnemy();
-                enemy.MoveTowards(user.position);
+                enemy.MoveTowards(user);
+
+                // check collision with user
+                if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                    user.LoseHealth();
+                    user.UpdateCooldown();
+                }
             }
-            
             // iterate over each item in the projectile vector (backwards, as it's furthest away from the user (origin))
             for (int i = user.projectiles.size() - 1; i >= 0; --i) {
                 bool projectileHit = false;

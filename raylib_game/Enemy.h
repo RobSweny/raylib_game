@@ -8,12 +8,11 @@ struct Enemy : Health
     int size;
     float speed;
     Color color;
-    int currentHealth;
-    int maxHealth;
     std::vector<Projectile> enemies{};
 
     Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
-            : position(position), size(size), speed(speed), color(color), maxHealth(maxHealth), currentHealth(maxHealth) {}
+            : Health { maxHealth, maxHealth},
+            position(position), size(size), speed(speed), color(color) {}
 
     // boolean function that returns when the enemy health is less than or equal to 0
     bool TakeDamage(int damageAmount) {
@@ -23,12 +22,12 @@ struct Enemy : Health
 
     // https://stackoverflow.com/questions/2625021/game-enemy-move-towards-player
     /// @brief 
-    /// @param userPosition 
-    void MoveTowards(Vector2 userPosition)
+    /// @param user 
+    void MoveTowards(User user)
     {
         Vector2 direction = {
-            userPosition.x - position.x,
-            userPosition.y - position.y
+            user.position.x - position.x,
+            user.position.y - position.y
         };
 
         // Normalize direction

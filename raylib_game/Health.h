@@ -6,13 +6,14 @@ struct Health
 {
     int maxHealth;
     int currentHealth;
-
-    void LoseHealth()
+    
+    bool CheckHealth()
     {
-        if (currentHealth == 1)
-        {
-            // Game Over
-        } else {
+        return currentHealth <= 0;
+    }
+
+    void LoseHealth() {
+        if (currentHealth > 0) {
             currentHealth--;
         }
     }
