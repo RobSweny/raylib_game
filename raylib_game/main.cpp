@@ -14,6 +14,7 @@ SoundManagement soundManagement;
 
 // bool's to avoid sound repetition
 bool gameOverSoundPlayed = false;
+bool isGamePaused = false;
 
 // creating the user
 User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
@@ -34,73 +35,82 @@ int main() {
     // The Game Loop
     while (!WindowShouldClose() /*WindowShouldClose returns true if esc is clicked and closes the window*/)
     {
-        // Setup Canvas
-        BeginDrawing();
-            // Clear canvas to a specific color to avoid flicker
-            ClearBackground(RAYWHITE);
+        // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
+        if (IsKeyPressed(KEY_P)) {
+            isGamePaused = !isGamePaused;
+        }
 
-            if (user.CheckHealth()) {
-                if (!gameOverSoundPlayed) {
-                    soundManagement.GameOverSounds();
-                    gameOverSoundPlayed = true;
+        // If the game is passed, draw text on the screen to inform the user
+        if (isGamePaused) {
+            DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 20) / 2, screenSize.y / 2, 20, BLACK);
+        } else {
+            // Setup Canvas
+            BeginDrawing();
+                // Clear canvas to a specific color to avoid flicker
+                ClearBackground(RAYWHITE);
+                if (user.CheckHealth()) {
+                    if (!gameOverSoundPlayed) {
+                        soundManagement.GameOverSounds();
+                        gameOverSoundPlayed = true;
+                    }
+                    // Display game over message
+                    DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
+                    EndDrawing();
+                    continue;  // Skip the rest of the game loop
                 }
-                // Display game over message
-                DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
-                EndDrawing();
-                continue;  // Skip the rest of the game loop
-            }
-            
-            user.CreateCharacter();
-            user.position = user.Controller();
-            // Draw player lives
-            // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
-            for (int i = 0; i < user.currentHealth; i++) 
-            {
-                DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
-            }
-
-            for (Enemy &enemy : enemies)
-            {
-                enemy.CreateEnemy();
-                enemy.MoveTowards(user);
-
-                // check collision with user
-                if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
-                    soundManagement.PlayOuchSound();
-                    user.LoseHealth();
-                    user.UpdateCooldown();
+                
+                user.CreateCharacter();
+                user.position = user.Controller();
+                // Draw player lives
+                // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
+                for (int i = 0; i < user.currentHealth; i++) 
+                {
+                    DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
                 }
-            }
-            // iterate over each item in the projectile vector (backwards, as it's furthest away from the user (origin))
-            for (int i = user.projectiles.size() - 1; i >= 0; --i) {
-                bool projectileHit = false;
-                user.projectiles[i].position.x += user.projectiles[i].direction.x * user.projectiles[i].speed;
-                user.projectiles[i].position.y += user.projectiles[i].direction.y * user.projectiles[i].speed;
 
-                // iterate over the enemies backwards
-                for (int j = enemies.size() - 1; j >= 0; --j) {
-                    // Check if the projectile position and size collides with the enemy position and size
-                    if (CheckCollisionCircles(user.projectiles[i].position, user.projectileSize, enemies[j].position, enemies[j].size)) {
-                        // if the enemy function 'TakeDamage' returns true, erase the enemy
-                        // this function checks if the current health of the enemy is <= 0
-                        if (enemies[j].TakeDamage(user.projectiles[i].damage)) {
-                            enemies.erase(enemies.begin() + j);
-                        }
-                        // Break out of the loop if an enemy has been hit.
-                        projectileHit = true;
-                        break; 
+                for (Enemy &enemy : enemies)
+                {
+                    enemy.CreateEnemy();
+                    enemy.MoveTowards(user);
+
+                    // check collision with user
+                    if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                        soundManagement.PlayOuchSound();
+                        user.LoseHealth();
+                        user.UpdateCooldown();
                     }
                 }
-            
-                // Check if the projectile has hit an enemy
-                if (projectileHit) {
-                    // If the projectile has hit an enemy, remove it from the projectiles vector
-                    user.projectiles.erase(user.projectiles.begin() + i); // Remove the used projectile
-                } else {
-                    // If the projectile didn't hit an enemy, draw it at its new position
-                    user.projectiles[i].Draw();
+                // iterate over each item in the projectile vector (backwards, as it's furthest away from the user (origin))
+                for (int i = user.projectiles.size() - 1; i >= 0; --i) {
+                    bool projectileHit = false;
+                    user.projectiles[i].position.x += user.projectiles[i].direction.x * user.projectiles[i].speed;
+                    user.projectiles[i].position.y += user.projectiles[i].direction.y * user.projectiles[i].speed;
+
+                    // iterate over the enemies backwards
+                    for (int j = enemies.size() - 1; j >= 0; --j) {
+                        // Check if the projectile position and size collides with the enemy position and size
+                        if (CheckCollisionCircles(user.projectiles[i].position, user.projectileSize, enemies[j].position, enemies[j].size)) {
+                            // if the enemy function 'TakeDamage' returns true, erase the enemy
+                            // this function checks if the current health of the enemy is <= 0
+                            if (enemies[j].TakeDamage(user.projectiles[i].damage)) {
+                                enemies.erase(enemies.begin() + j);
+                            }
+                            // Break out of the loop if an enemy has been hit.
+                            projectileHit = true;
+                            break; 
+                        }
+                    }
+                
+                    // Check if the projectile has hit an enemy
+                    if (projectileHit) {
+                        // If the projectile has hit an enemy, remove it from the projectiles vector
+                        user.projectiles.erase(user.projectiles.begin() + i); // Remove the used projectile
+                    } else {
+                        // If the projectile didn't hit an enemy, draw it at its new position
+                        user.projectiles[i].Draw();
+                    }
                 }
-            }
+        }
         // teardown Canvas
         EndDrawing();
     }
