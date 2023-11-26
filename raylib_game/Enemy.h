@@ -13,9 +13,9 @@ struct Enemy : Health
     std::vector<Projectile> enemies{};
 
     Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
-            : position(position), size(size), speed(speed), color(color), maxHealth(maxHealth) {}
+            : position(position), size(size), speed(speed), color(color), maxHealth(maxHealth), currentHealth(maxHealth) {}
 
-    // boolean fucntion that returns when the enemy health is less than or equal to 0
+    // boolean function that returns when the enemy health is less than or equal to 0
     bool TakeDamage(int damageAmount) {
         currentHealth -= damageAmount;
         return currentHealth <= 0;
