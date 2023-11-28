@@ -8,7 +8,6 @@ struct Enemy : Health
     int size;
     float speed;
     Color color;
-    std::vector<Projectile> enemies{};
 
     Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
             : Health { maxHealth, maxHealth},
