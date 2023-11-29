@@ -11,6 +11,7 @@ struct SoundManagement
     Sound gameMusic;
     Sound enemyCreatedSound;
     Sound countDown;
+    Sound bomb;
 
     SoundManagement()
     {
@@ -26,6 +27,7 @@ struct SoundManagement
         gameMusic = LoadSound("Sounds/game_music.mp3");
         enemyCreatedSound = LoadSound("Sounds/enemy_spawn.mp3");
         countDown = LoadSound("Sounds/game_countdown.mp3");
+        bomb = LoadSound("Sounds/big_blast.mp3");
     }
     
     void PlayCountdownSound() {
@@ -48,6 +50,10 @@ struct SoundManagement
         PlaySound(shoot);
     }
 
+    void PlayBombSound() {
+        PlaySound(bomb);
+    }
+
     void GameOverSounds() {
         PlaySound(gameOver);
         PlaySound(gameOverMusic);
@@ -62,6 +68,7 @@ struct SoundManagement
         UnloadSound(gameOver);
         UnloadSound(gameOverMusic);
         UnloadSound(countDown);
+        UnloadSound(bomb);
          // Close audio device
         CloseAudioDevice();
     }

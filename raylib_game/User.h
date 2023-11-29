@@ -19,7 +19,10 @@ struct User : Health
     bool isOnHealthCooldown = false;
     // 2 second timer from being hit
     float cooldownTime = 2.0f;
+    float bombCooldownTime = 5.0f;
     float lastHitTime;
+    // Initialize for instant use
+    float lastAllDirectionShootTime = -cooldownTime;
     // Array of struct Projectile
     std::vector<Projectile> projectiles{};
     // Include reference to sound management
@@ -40,8 +43,26 @@ struct User : Health
         if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) position.x -= speed;
         if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) position.y += speed;
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) position.x += speed;
-        if ((IsMouseButtonPressed(MOUSE_LEFT_BUTTON) || IsKeyDown(KEY_SPACE))) Shoot();
+        if (IsKeyPressed(KEY_SPACE)) ShootInAllDirections();
+        if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) Shoot();
         return position;
+    }
+
+    // https://www.reddit.com/r/godot/comments/se6zbr/best_way_to_implement_directional_shooting_in/
+    void ShootInAllDirections() {
+        float currentTime = GetTime();
+        if (currentTime - lastAllDirectionShootTime >= bombCooldownTime) {
+            std::vector<Vector2> directionVectors = {
+                {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
+            };
+            for (Vector2 dir : directionVectors) {
+                Vector2 direction = {dir.x, dir.y};
+                Projectile newProjectile = { position, direction, 1.0f, RED, 1, projectileSize };
+                projectiles.push_back(newProjectile);
+            }
+            soundManagement.PlayBombSound();
+            lastAllDirectionShootTime = currentTime;
+        }
     }
 
     // Update cooldown time, this is called when the user has been hit
