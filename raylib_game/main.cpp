@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "User.h"
+#include "LifePickUp.h"
 #include "Enemy.h"
 #include "Projectile.h"
 #include "SoundManagement.h"
@@ -11,6 +12,7 @@
 Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 int difficultyLevel = 0;
+LifePickUp lifepickup;
 SoundManagement soundManagement;
 float levelClearedTime;
 
@@ -18,9 +20,10 @@ float levelClearedTime;
 bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
 bool isLevelTransition = false;
+bool lifeCreatedThisRound = false;
 
 // creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 2, soundManagement);
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
 
 bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
@@ -125,7 +128,19 @@ int main() {
         if (IsLevelCleared(enemies) && !isLevelTransition) {
             isLevelTransition = true;
             levelClearedTime = GetTime();
+            lifeCreatedThisRound = false;
             soundManagement.PlayCountdownSound();
+        }
+
+        if (CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
+            user.GainHealth();
+            lifepickup.LifePickedUp(soundManagement);
+        }
+
+        if (!lifeCreatedThisRound && GetTime() - levelClearedTime < (float) GetRandomValue(5, 20) )
+        {   
+            lifepickup.CreateLife();
+            lifeCreatedThisRound = true;
         }
 
         if (IsLevelCleared(enemies)) {
