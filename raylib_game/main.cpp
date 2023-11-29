@@ -4,74 +4,101 @@
 #include "Projectile.h"
 #include "SoundManagement.h"
 #include <math.h>
+#include <string>
 #include <vector>
 
 // Determine the Game Window Width and Height
 Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
-int difficultyLevel = 1;
+int difficultyLevel = 0;
 SoundManagement soundManagement;
+float levelClearedTime;
 
 // bool's to avoid sound repetition
 bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
+bool isLevelTransition = false;
 
 // creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 2, soundManagement);
+
+bool IsLevelCleared(const std::vector<Enemy>& enemies) {
+    return enemies.empty();
+}
 
 Vector2 GenerateRandomPosition()
 {
-    int screenWidthCenterOffset = GetScreenWidth() / 2 + 100;
-    int screenHeightCenterOffset = GetScreenHeight() / 2 + 100;
     Vector2 enemyPosition;
-    enemyPosition.x = GetRandomValue(screenWidthCenterOffset, GetScreenWidth());
-    enemyPosition.y = GetRandomValue(screenHeightCenterOffset, GetScreenHeight());
+    do {
+        enemyPosition.x = GetRandomValue(0, GetScreenWidth());
+        enemyPosition.y = GetRandomValue(0, GetScreenHeight());
+    } while (CheckCollisionCircles(enemyPosition, 50, user.position, 200));
+    
     return enemyPosition; 
+}
+
+Enemy GenerateEasyEnemy()
+{
+    Enemy easyEnemy (GenerateRandomPosition(), 10, 0.5F, GREEN, 1);
+    return easyEnemy;
+}
+
+Enemy GenerateHardEnemy()
+{
+    Enemy hardEnemy (GenerateRandomPosition(), 20, 3.0F, RED, 5);
+    return hardEnemy;
+}
+
+Enemy GenerateMediumEnemy()
+{
+    Enemy mediumEnemy (GenerateRandomPosition(), 15, 2.0F, ORANGE, 3);
+    return mediumEnemy;
+}
+
+Enemy GenerateSpeedyEnemy()
+{
+    Enemy speedBois (GenerateRandomPosition(), 8, 5.0F, BLUE, 1);
+    return speedBois;
 }
 
 std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 {
     std::vector<Enemy> enemies{};
-    int enemiesToGenerate = levelOfDifficulty * 10;
-    Enemy speedBois (GenerateRandomPosition(), 8, 7.0F, BLUE, 1);
-    Enemy easyEnemy (GenerateRandomPosition(), 10, 1.0F, GREEN, 1);
-    Enemy mediumEnemy (GenerateRandomPosition(), 15, 2.0F, ORANGE, 3);
-    Enemy hardEnemy (GenerateRandomPosition(), 20, 3.0F, RED, 5);
-    
+    int enemiesToGenerate = levelOfDifficulty * 10; 
     switch (levelOfDifficulty)
     {
         case 0:
-            for (int i = 0; i < enemiesToGenerate; i++)
+            for (int i = 0; i < 10; i++)
             {
-                enemies.push_back(easyEnemy);
+                enemies.push_back(GenerateEasyEnemy());
             }
             break;
         case 1:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(easyEnemy);
-                enemies.push_back(mediumEnemy);
+                enemies.push_back(GenerateEasyEnemy());
+                enemies.push_back(GenerateMediumEnemy());
             }
             break;
         case 3:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(speedBois);
+                enemies.push_back(GenerateSpeedyEnemy());
             }
             break;
         case 4:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(mediumEnemy);
-                enemies.push_back(hardEnemy);
+                enemies.push_back(GenerateMediumEnemy());
+                enemies.push_back(GenerateHardEnemy());
             }
             break;
         case 5:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(easyEnemy);
-                enemies.push_back(mediumEnemy);
-                enemies.push_back(hardEnemy);
+                enemies.push_back(GenerateEasyEnemy());
+                enemies.push_back(GenerateMediumEnemy());
+                enemies.push_back(GenerateHardEnemy());
             }
             break;
     }
@@ -93,6 +120,26 @@ int main() {
         // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
         if (IsKeyPressed(KEY_P)) {
             isGamePaused = !isGamePaused;
+        }
+        
+        if (IsLevelCleared(enemies) && !isLevelTransition) {
+            isLevelTransition = true;
+            levelClearedTime = GetTime();
+            soundManagement.PlayCountdownSound();
+        }
+
+        if (IsLevelCleared(enemies)) {
+            if (GetTime() - levelClearedTime < 3.5f) {
+                BeginDrawing();
+                    ClearBackground(RAYWHITE);
+                    DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 50) / 2, GetScreenHeight() / 2, 50, BLACK);
+                EndDrawing();
+                continue;
+            } else {
+                isLevelTransition = false;
+                difficultyLevel++;
+                enemies = GenerateEnemies(difficultyLevel);
+            }
         }
 
         // If the game is passed, draw text on the screen to inform the user
