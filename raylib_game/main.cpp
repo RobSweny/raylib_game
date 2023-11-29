@@ -4,6 +4,7 @@
 #include "Projectile.h"
 #include "SoundManagement.h"
 #include <math.h>
+#include <string>
 #include <vector>
 
 // Determine the Game Window Width and Height
@@ -11,13 +12,19 @@ Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 int difficultyLevel = 0;
 SoundManagement soundManagement;
+float levelClearedTime;
 
 // bool's to avoid sound repetition
 bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
+bool isLevelTransition = false;
 
 // creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 2, soundManagement);
+
+bool IsLevelCleared(const std::vector<Enemy>& enemies) {
+    return enemies.empty();
+}
 
 Vector2 GenerateRandomPosition()
 {
@@ -50,7 +57,7 @@ Enemy GenerateMediumEnemy()
 
 Enemy GenerateSpeedyEnemy()
 {
-    Enemy speedBois (GenerateRandomPosition(), 8, 7.0F, BLUE, 1);
+    Enemy speedBois (GenerateRandomPosition(), 8, 5.0F, BLUE, 1);
     return speedBois;
 }
 
@@ -113,6 +120,26 @@ int main() {
         // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
         if (IsKeyPressed(KEY_P)) {
             isGamePaused = !isGamePaused;
+        }
+        
+        if (IsLevelCleared(enemies) && !isLevelTransition) {
+            isLevelTransition = true;
+            levelClearedTime = GetTime();
+            soundManagement.PlayCountdownSound();
+        }
+
+        if (IsLevelCleared(enemies)) {
+            if (GetTime() - levelClearedTime < 3.5f) {
+                BeginDrawing();
+                    ClearBackground(RAYWHITE);
+                    DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 50) / 2, GetScreenHeight() / 2, 50, BLACK);
+                EndDrawing();
+                continue;
+            } else {
+                isLevelTransition = false;
+                difficultyLevel++;
+                enemies = GenerateEnemies(difficultyLevel);
+            }
         }
 
         // If the game is passed, draw text on the screen to inform the user

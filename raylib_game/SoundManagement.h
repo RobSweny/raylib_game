@@ -10,6 +10,7 @@ struct SoundManagement
     Sound ouch;
     Sound gameMusic;
     Sound enemyCreatedSound;
+    Sound countDown;
 
     SoundManagement()
     {
@@ -24,6 +25,11 @@ struct SoundManagement
         ouch = LoadSound("Sounds/ouch.wav");
         gameMusic = LoadSound("Sounds/game_music.mp3");
         enemyCreatedSound = LoadSound("Sounds/enemy_spawn.mp3");
+        countDown = LoadSound("Sounds/game_countdown.mp3");
+    }
+    
+    void PlayCountdownSound() {
+        PlaySound(countDown);
     }
 
     void PlayEnemySpawnSound() {
@@ -55,6 +61,7 @@ struct SoundManagement
         UnloadSound(ouch);
         UnloadSound(gameOver);
         UnloadSound(gameOverMusic);
+        UnloadSound(countDown);
          // Close audio device
         CloseAudioDevice();
     }
