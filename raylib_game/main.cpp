@@ -9,7 +9,7 @@
 // Determine the Game Window Width and Height
 Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
-std::vector<Enemy> enemies;
+int difficultyLevel = 1;
 SoundManagement soundManagement;
 
 // bool's to avoid sound repetition
@@ -18,10 +18,66 @@ bool isGamePaused = false;
 
 // creating the user
 User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
-// creating different types of enemies
-Enemy easyEnemy({ (float) 100, (float) 100 }, 10, 1.0F, GREEN, 1);
-Enemy mediumEnemy({ (float) 100, (float) 100 }, 25, 2.0F, ORANGE, 3);
-Enemy hardEnemy({ (float) 100, (float) 100 }, 40, 4.0F, RED, 5);
+
+Vector2 GenerateRandomPosition()
+{
+    int screenWidthCenterOffset = GetScreenWidth() / 2 + 100;
+    int screenHeightCenterOffset = GetScreenHeight() / 2 + 100;
+    Vector2 enemyPosition;
+    enemyPosition.x = GetRandomValue(screenWidthCenterOffset, GetScreenWidth());
+    enemyPosition.y = GetRandomValue(screenHeightCenterOffset, GetScreenHeight());
+    return enemyPosition; 
+}
+
+std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
+{
+    std::vector<Enemy> enemies{};
+    int enemiesToGenerate = levelOfDifficulty * 10;
+    Enemy speedBois (GenerateRandomPosition(), 8, 7.0F, BLUE, 1);
+    Enemy easyEnemy (GenerateRandomPosition(), 10, 1.0F, GREEN, 1);
+    Enemy mediumEnemy (GenerateRandomPosition(), 15, 2.0F, ORANGE, 3);
+    Enemy hardEnemy (GenerateRandomPosition(), 20, 3.0F, RED, 5);
+    
+    switch (levelOfDifficulty)
+    {
+        case 0:
+            for (int i = 0; i < enemiesToGenerate; i++)
+            {
+                enemies.push_back(easyEnemy);
+            }
+            break;
+        case 1:
+            for (int i = 0; i < enemiesToGenerate; i++)
+            {
+                enemies.push_back(easyEnemy);
+                enemies.push_back(mediumEnemy);
+            }
+            break;
+        case 3:
+            for (int i = 0; i < enemiesToGenerate; i++)
+            {
+                enemies.push_back(speedBois);
+            }
+            break;
+        case 4:
+            for (int i = 0; i < enemiesToGenerate; i++)
+            {
+                enemies.push_back(mediumEnemy);
+                enemies.push_back(hardEnemy);
+            }
+            break;
+        case 5:
+            for (int i = 0; i < enemiesToGenerate; i++)
+            {
+                enemies.push_back(easyEnemy);
+                enemies.push_back(mediumEnemy);
+                enemies.push_back(hardEnemy);
+            }
+            break;
+    }
+
+    return enemies;
+}
 
 int main() {
     // Initialize the Window
@@ -29,8 +85,7 @@ int main() {
     // Setting the Frames Per Second
     SetTargetFPS(60);
     soundManagement.PlayGameMusic();
-    enemies.push_back(easyEnemy);
-    enemies.push_back(mediumEnemy);
+    std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
 
     // The Game Loop
     while (!WindowShouldClose() /*WindowShouldClose returns true if esc is clicked and closes the window*/)
