@@ -29,41 +29,45 @@ bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
 }
 
-Vector2 GenerateRandomPosition()
+// Generate a random position for each enemy
+Vector2 GenerateRandomEnemyPosition()
 {
     Vector2 enemyPosition;
     do {
+        // Get random number for the x and y position, we do this until we find a position
+        // that doesn't overlap with the user position with an additional radius of 200 around the user. 
         enemyPosition.x = GetRandomValue(0, GetScreenWidth());
         enemyPosition.y = GetRandomValue(0, GetScreenHeight());
     } while (CheckCollisionCircles(enemyPosition, 50, user.position, 200));
-    
     return enemyPosition; 
 }
 
 Enemy GenerateEasyEnemy()
 {
-    Enemy easyEnemy (GenerateRandomPosition(), 10, 0.5F, GREEN, 1);
+    Enemy easyEnemy (GenerateRandomEnemyPosition(), 10, 0.5F, GREEN, 1);
     return easyEnemy;
 }
 
 Enemy GenerateHardEnemy()
 {
-    Enemy hardEnemy (GenerateRandomPosition(), 20, 3.0F, RED, 5);
+    Enemy hardEnemy (GenerateRandomEnemyPosition(), 20, 3.0F, RED, 5);
     return hardEnemy;
 }
 
 Enemy GenerateMediumEnemy()
 {
-    Enemy mediumEnemy (GenerateRandomPosition(), 15, 2.0F, ORANGE, 3);
+    Enemy mediumEnemy (GenerateRandomEnemyPosition(), 15, 2.0F, ORANGE, 3);
     return mediumEnemy;
 }
 
 Enemy GenerateSpeedyEnemy()
 {
-    Enemy speedBois (GenerateRandomPosition(), 8, 5.0F, BLUE, 1);
+    Enemy speedBois (GenerateRandomEnemyPosition(), 8, 5.0F, BLUE, 1);
     return speedBois;
 }
 
+// Based on the input parameter of the level of difficulty, we generate enemies.
+// each level that the user passes, a more difficult set of enemies is created
 std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 {
     std::vector<Enemy> enemies{};
@@ -125,25 +129,33 @@ int main() {
             isGamePaused = !isGamePaused;
         }
         
+        // If the user clears all the enemies and it's not currently a level transition
         if (IsLevelCleared(enemies) && !isLevelTransition) {
+            // set the transition
             isLevelTransition = true;
+            // capture what time the level was cleared, we use this to countdown the next level
             levelClearedTime = GetTime();
+            // set the life created to false
             lifeCreatedThisRound = false;
             soundManagement.PlayCountdownSound();
         }
 
+        // Check if the user collides with the life, if they do, play an sound and increase the users life
         if (CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
             user.GainHealth();
             lifepickup.LifePickedUp(soundManagement);
         }
 
-        if (!lifeCreatedThisRound && GetTime() - levelClearedTime < (float) GetRandomValue(5, 20) )
+        // If a life hasn't been created this round, generate a life after 10 seconds
+        if (!lifeCreatedThisRound && GetTime() - levelClearedTime < 10.0f )
         {   
             lifepickup.CreateLife();
             lifeCreatedThisRound = true;
         }
 
+        // Check if the enemies list has been cleared
         if (IsLevelCleared(enemies)) {
+            // Pause the game for 3.5 seconds and introduce the next level
             if (GetTime() - levelClearedTime < 3.5f) {
                 BeginDrawing();
                     ClearBackground(RAYWHITE);
@@ -151,6 +163,7 @@ int main() {
                 EndDrawing();
                 continue;
             } else {
+                // When the next level starts, increase the difficult and generate the next set of enemies
                 isLevelTransition = false;
                 difficultyLevel++;
                 enemies = GenerateEnemies(difficultyLevel);
@@ -185,6 +198,7 @@ int main() {
                     DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
                 }
 
+                // For each of the enemies created, create their sprite and have them move towards the user
                 for (Enemy &enemy : enemies)
                 {
                     enemy.CreateEnemy();
@@ -192,6 +206,8 @@ int main() {
 
                     // check collision with user
                     if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                        // If the user collides with an enemy, play a sound, remove user health and update
+                        // the cooldown for when the user can be hit again.
                         soundManagement.PlayOuchSound();
                         user.LoseHealth();
                         user.UpdateCooldown();
@@ -231,6 +247,7 @@ int main() {
         // teardown Canvas
         EndDrawing();
     }
+    // Upload all loaded sounds
     soundManagement.UnloadSoundManagement();
     CloseWindow();
     return 0;

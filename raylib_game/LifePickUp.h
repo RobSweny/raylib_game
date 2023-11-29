@@ -13,12 +13,15 @@ struct LifePickUp
         DrawCircleV(GenerateRandomHealthPosition(), size, RED);
     }
     
+    // When a life is picked up, set the size to 0 and play a pick up life sound.
+    // This should give the appearance that the life disappeared.
     void LifePickedUp(SoundManagement soundManagement)
     {
         size = 0;
         soundManagement.PlayLifePickUpSound();
     }
 
+    // Create a random position around the map
     Vector2 GenerateRandomHealthPosition()
     {
         Vector2 position;
