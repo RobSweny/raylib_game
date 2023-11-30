@@ -2,15 +2,22 @@
 #ifndef LIFEPICKUP_H
 #define LIFEPICKUP_H
 
+#include "TextureManagement.h"
+
 struct LifePickUp
 {
-    int value = 1;
-    int size = 5;
+    int value;
+    int size;
+    Color color;
     Vector2 position;
+    Texture2D &heartTexture;
 
-    void CreateLife()
+    LifePickUp(int value, int size, Color color, Vector2 position, Texture2D &heartTexture)
+        : value(value), size(size), color(color), position(position), heartTexture(heartTexture) {}
+
+    void CreateLifePickUp()
     {
-        DrawCircleV(GenerateRandomHealthPosition(), size, RED);
+        DrawTexture(heartTexture, position.x, position.y, color);
     }
     
     // When a life is picked up, set the size to 0 and play a pick up life sound.
@@ -19,15 +26,6 @@ struct LifePickUp
     {
         size = 0;
         soundManagement.PlayLifePickUpSound();
-    }
-
-    // Create a random position around the map
-    Vector2 GenerateRandomHealthPosition()
-    {
-        Vector2 position;
-        position.x = GetRandomValue(0, GetScreenWidth());
-        position.y = GetRandomValue(0, GetScreenHeight());
-        return position; 
     }
 };
 #endif // LIFEPICKUP

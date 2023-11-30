@@ -48,6 +48,10 @@ struct SoundManagement
         PlaySound(gameMusic);
     }
 
+    void StopGameMusic() {
+        StopSound(gameMusic);
+    }
+
     void PlayOuchSound() {
         PlaySound(ouch);
     }
