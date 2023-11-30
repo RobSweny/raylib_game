@@ -192,7 +192,7 @@ int main() {
             // Setup Canvas
             BeginDrawing();
                 // Clear canvas to a specific color to avoid flicker
-                ClearBackground(RAYWHITE);
+                DrawTexture(textureManagement.background, 0, 0, WHITE);
                 if (user.CheckHealth()) {
                     if (!gameOverSoundPlayed) {
                         soundManagement.StopGameMusic();
