@@ -1,8 +1,10 @@
 #include "raylib.h"
 #include "User.h"
+#include "LifePickUp.h"
 #include "Enemy.h"
 #include "Projectile.h"
 #include "SoundManagement.h"
+#include "TextureManagement.h"
 #include <math.h>
 #include <string>
 #include <vector>
@@ -12,55 +14,63 @@ Vector2 screenSize = {1200.0f, 800.0f};
 int projectileSpeed = 5;
 int difficultyLevel = 0;
 SoundManagement soundManagement;
-float levelClearedTime;
+TextureManagement textureManagement;
+float levelClearedTime = GetTime();
 
 // bool's to avoid sound repetition
 bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
 bool isLevelTransition = false;
+bool lifePickupActive = false;
 
 // creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 2, soundManagement);
+User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
+
+// Generate a random position for each enemy
+Vector2 GenerateRandomPositionOutsideOfUserArea(int edge)
+{
+    Vector2 position;
+    do {
+        // Get random number for the x and y position, we do this until we find a position
+        // that doesn't overlap with the user position with an additional radius of 200 around the user. 
+        position.x = GetRandomValue(0, GetScreenWidth() - edge);
+        position.y = GetRandomValue(0, GetScreenHeight() - edge);
+    } while (CheckCollisionCircles(position, 50, user.position, 200));
+    return position; 
+}
+
+LifePickUp lifepickup = { 1, 20, RED, GenerateRandomPositionOutsideOfUserArea(20), textureManagement.heart };
 
 bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
 }
 
-Vector2 GenerateRandomPosition()
-{
-    Vector2 enemyPosition;
-    do {
-        enemyPosition.x = GetRandomValue(0, GetScreenWidth());
-        enemyPosition.y = GetRandomValue(0, GetScreenHeight());
-    } while (CheckCollisionCircles(enemyPosition, 50, user.position, 200));
-    
-    return enemyPosition; 
-}
-
 Enemy GenerateEasyEnemy()
 {
-    Enemy easyEnemy (GenerateRandomPosition(), 10, 0.5F, GREEN, 1);
+    Enemy easyEnemy (GenerateRandomPositionOutsideOfUserArea(10), 10, 0.5F, GREEN, 1);
     return easyEnemy;
 }
 
 Enemy GenerateHardEnemy()
 {
-    Enemy hardEnemy (GenerateRandomPosition(), 20, 3.0F, RED, 5);
+    Enemy hardEnemy (GenerateRandomPositionOutsideOfUserArea(20), 20, 3.0F, RED, 5);
     return hardEnemy;
 }
 
 Enemy GenerateMediumEnemy()
 {
-    Enemy mediumEnemy (GenerateRandomPosition(), 15, 2.0F, ORANGE, 3);
+    Enemy mediumEnemy (GenerateRandomPositionOutsideOfUserArea(15), 15, 2.0F, ORANGE, 3);
     return mediumEnemy;
 }
 
 Enemy GenerateSpeedyEnemy()
 {
-    Enemy speedBois (GenerateRandomPosition(), 8, 5.0F, BLUE, 1);
+    Enemy speedBois (GenerateRandomPositionOutsideOfUserArea(8), 8, 4.0F, BLUE, 1);
     return speedBois;
 }
 
+// Based on the input parameter of the level of difficulty, we generate enemies.
+// each level that the user passes, a more difficult set of enemies is created
 std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 {
     std::vector<Enemy> enemies{};
@@ -80,20 +90,20 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
                 enemies.push_back(GenerateMediumEnemy());
             }
             break;
-        case 3:
+        case 2:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
                 enemies.push_back(GenerateSpeedyEnemy());
             }
             break;
-        case 4:
+        case 3:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
                 enemies.push_back(GenerateMediumEnemy());
                 enemies.push_back(GenerateHardEnemy());
             }
             break;
-        case 5:
+        case 4:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
                 enemies.push_back(GenerateEasyEnemy());
@@ -101,6 +111,11 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
                 enemies.push_back(GenerateHardEnemy());
             }
             break;
+        case 5:
+            BeginDrawing();
+                ClearBackground(RAYWHITE);
+                DrawText("Victory!", GetScreenWidth() / 2 - MeasureText("Victory!", 50) / 2, GetScreenHeight() / 2, 50, BLACK);
+            EndDrawing();
     }
 
     return enemies;
@@ -111,6 +126,7 @@ int main() {
     InitWindow(screenSize.x, screenSize.y, "My Game");
     // Setting the Frames Per Second
     SetTargetFPS(60);
+    textureManagement.LoadTextures();
     soundManagement.PlayGameMusic();
     std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
 
@@ -121,23 +137,50 @@ int main() {
         if (IsKeyPressed(KEY_P)) {
             isGamePaused = !isGamePaused;
         }
-        
-        if (IsLevelCleared(enemies) && !isLevelTransition) {
-            isLevelTransition = true;
-            levelClearedTime = GetTime();
-            soundManagement.PlayCountdownSound();
+
+        // if the life is ready to be set and it's not a level transition, create the object
+        if (lifePickupActive && !isLevelTransition) {
+            lifepickup.CreateLifePickUp();
         }
 
+        // Collision detection with life pickup, play sound and prevent another life from being created.
+        if (lifePickupActive && CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
+            user.GainHealth();
+            lifepickup.LifePickedUp(soundManagement);
+            lifePickupActive = false; // Deactivate the life pickup after collection
+        }
+
+        // If the user clears all the enemies and it's not currently a level transition
+        if (IsLevelCleared(enemies) && !isLevelTransition) {
+            // set the transition
+            isLevelTransition = true;
+            // capture what time the level was cleared, we use this to countdown the next level
+            levelClearedTime = GetTime();
+            soundManagement.PlayCountdownSound();
+
+            // when the level is transitioning create 
+            if (!lifePickupActive) {
+                lifepickup.size = 20;
+                lifepickup.position = GenerateRandomPositionOutsideOfUserArea(lifepickup.size);
+                lifePickupActive = true;
+            }
+        }
+
+        // Check if the enemies list has been cleared
         if (IsLevelCleared(enemies)) {
+            // Pause the game for 3.5 seconds and introduce the next level
             if (GetTime() - levelClearedTime < 3.5f) {
                 BeginDrawing();
                     ClearBackground(RAYWHITE);
                     DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 50) / 2, GetScreenHeight() / 2, 50, BLACK);
                 EndDrawing();
                 continue;
-            } else {
+            }
+            else {
+                // When the next level starts, increase the difficult and generate the next set of enemies
                 isLevelTransition = false;
                 difficultyLevel++;
+                lifepickup.CreateLifePickUp();
                 enemies = GenerateEnemies(difficultyLevel);
             }
         }
@@ -152,6 +195,7 @@ int main() {
                 ClearBackground(RAYWHITE);
                 if (user.CheckHealth()) {
                     if (!gameOverSoundPlayed) {
+                        soundManagement.StopGameMusic();
                         soundManagement.GameOverSounds();
                         gameOverSoundPlayed = true;
                     }
@@ -170,6 +214,7 @@ int main() {
                     DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
                 }
 
+                // For each of the enemies created, create their sprite and have them move towards the user
                 for (Enemy &enemy : enemies)
                 {
                     enemy.CreateEnemy();
@@ -177,6 +222,8 @@ int main() {
 
                     // check collision with user
                     if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                        // If the user collides with an enemy, play a sound, remove user health and update
+                        // the cooldown for when the user can be hit again.
                         soundManagement.PlayOuchSound();
                         user.LoseHealth();
                         user.UpdateCooldown();
@@ -216,6 +263,7 @@ int main() {
         // teardown Canvas
         EndDrawing();
     }
+    // Upload all loaded sounds
     soundManagement.UnloadSoundManagement();
     CloseWindow();
     return 0;

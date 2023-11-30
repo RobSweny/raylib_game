@@ -37,14 +37,28 @@ struct User : Health
     // Creating function for managing the controller
     Vector2 Controller()
     {
-        if (IsKeyDown(KEY_LEFT_SHIFT)) speed = 8.0f;
-        else if (IsKeyReleased(KEY_LEFT_SHIFT)) speed = 4.0f;
+        if (IsKeyDown(KEY_LEFT_SHIFT)) 
+        {
+            speed = 8.0f;
+        }
+        else if (IsKeyReleased(KEY_LEFT_SHIFT))
+        {
+            speed = 4.0f;
+        }
         if (IsKeyDown(KEY_UP) || IsKeyDown(KEY_W)) position.y -= speed;
         if (IsKeyDown(KEY_LEFT) || IsKeyDown(KEY_A)) position.x -= speed;
         if (IsKeyDown(KEY_DOWN) || IsKeyDown(KEY_S)) position.y += speed;
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) position.x += speed;
         if (IsKeyPressed(KEY_SPACE)) ShootInAllDirections();
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) Shoot();
+        if (IsKeyDown(KEY_LEFT_CONTROL))
+        {
+            size = 25;
+        }
+        else if (IsKeyReleased(KEY_LEFT_CONTROL))
+        {
+            size = 50; 
+        }
         return position;
     }
 

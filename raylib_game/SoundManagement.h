@@ -12,6 +12,7 @@ struct SoundManagement
     Sound enemyCreatedSound;
     Sound countDown;
     Sound bomb;
+    Sound lifePickup;
 
     SoundManagement()
     {
@@ -28,6 +29,7 @@ struct SoundManagement
         enemyCreatedSound = LoadSound("Sounds/enemy_spawn.mp3");
         countDown = LoadSound("Sounds/game_countdown.mp3");
         bomb = LoadSound("Sounds/big_blast.mp3");
+        lifePickup = LoadSound("Sounds/pickup.wav");
     }
     
     void PlayCountdownSound() {
@@ -38,8 +40,16 @@ struct SoundManagement
         PlaySound(enemyCreatedSound);
     }
 
+    void PlayLifePickUpSound() {
+        PlaySound(lifePickup);
+    }
+
     void PlayGameMusic() {
         PlaySound(gameMusic);
+    }
+
+    void StopGameMusic() {
+        StopSound(gameMusic);
     }
 
     void PlayOuchSound() {
@@ -69,6 +79,7 @@ struct SoundManagement
         UnloadSound(gameOverMusic);
         UnloadSound(countDown);
         UnloadSound(bomb);
+        UnloadSound(lifePickup);
          // Close audio device
         CloseAudioDevice();
     }
