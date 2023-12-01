@@ -11,10 +11,12 @@
 
 // Determine the Game Window Width and Height
 Vector2 screenSize = {1200.0f, 800.0f};
-int projectileSpeed = 5;
+Vector2 centerOfScreen = { (float)screenSize.x/2, (float)screenSize.y/2 };
 int difficultyLevel = 0;
-SoundManagement soundManagement;
 TextureManagement textureManagement;
+SoundManagement soundManagement;
+Animation animation;
+
 float levelClearedTime = GetTime();
 
 // bool's to avoid sound repetition
@@ -22,10 +24,7 @@ bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
 bool isLevelTransition = false;
 bool lifePickupActive = false;
-
-// creating the user
-User user(50, { (float)screenSize.x/2, (float)screenSize.y/2 }, 4.0f, 3, soundManagement);
-
+   
 // Generate a random position for each enemy
 Vector2 GenerateRandomPositionOutsideOfUserArea(int edge)
 {
@@ -35,11 +34,9 @@ Vector2 GenerateRandomPositionOutsideOfUserArea(int edge)
         // that doesn't overlap with the user position with an additional radius of 200 around the user. 
         position.x = GetRandomValue(0, GetScreenWidth() - edge);
         position.y = GetRandomValue(0, GetScreenHeight() - edge);
-    } while (CheckCollisionCircles(position, 50, user.position, 200));
+    } while (CheckCollisionCircles(position, 50, centerOfScreen, 200));
     return position; 
 }
-
-LifePickUp lifepickup = { 1, 20, RED, GenerateRandomPositionOutsideOfUserArea(20), textureManagement.heart };
 
 bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
@@ -47,25 +44,25 @@ bool IsLevelCleared(const std::vector<Enemy>& enemies) {
 
 Enemy GenerateEasyEnemy()
 {
-    Enemy easyEnemy (GenerateRandomPositionOutsideOfUserArea(10), 10, 0.5F, GREEN, 1);
+    Enemy easyEnemy (GenerateRandomPositionOutsideOfUserArea(0), 40, 0.5F, 1, textureManagement.easyZombieAnimation);
     return easyEnemy;
-}
-
-Enemy GenerateHardEnemy()
-{
-    Enemy hardEnemy (GenerateRandomPositionOutsideOfUserArea(20), 20, 3.0F, RED, 5);
-    return hardEnemy;
 }
 
 Enemy GenerateMediumEnemy()
 {
-    Enemy mediumEnemy (GenerateRandomPositionOutsideOfUserArea(15), 15, 2.0F, ORANGE, 3);
+    Enemy mediumEnemy (GenerateRandomPositionOutsideOfUserArea(0), 45, 2.0F, 3, textureManagement.mediumZombieAnimation);
     return mediumEnemy;
+}
+
+Enemy GenerateHardEnemy()
+{
+    Enemy hardEnemy (GenerateRandomPositionOutsideOfUserArea(0), 50, 3.0F, 5, textureManagement.hardZombieAnimation);
+    return hardEnemy;
 }
 
 Enemy GenerateSpeedyEnemy()
 {
-    Enemy speedBois (GenerateRandomPositionOutsideOfUserArea(8), 8, 4.0F, BLUE, 1);
+    Enemy speedBois (GenerateRandomPositionOutsideOfUserArea(0), 35, 4.0F, 1, textureManagement.speedyZombieAnimation);
     return speedBois;
 }
 
@@ -126,13 +123,16 @@ int main() {
     InitWindow(screenSize.x, screenSize.y, "My Game");
     // Setting the Frames Per Second
     SetTargetFPS(60);
-    textureManagement.LoadTextures();
+    textureManagement.Initialize();
     soundManagement.PlayGameMusic();
+    User user(50, centerOfScreen, 4.0f, 3, soundManagement, textureManagement.playerRunningAnimation);
+    LifePickUp lifepickup = { 1, 60, GenerateRandomPositionOutsideOfUserArea(20), textureManagement.heart};
     std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
-
+    
     // The Game Loop
     while (!WindowShouldClose() /*WindowShouldClose returns true if esc is clicked and closes the window*/)
     {
+        float deltaTime = GetFrameTime();
         // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
         if (IsKeyPressed(KEY_P)) {
             isGamePaused = !isGamePaused;
@@ -140,7 +140,7 @@ int main() {
 
         // if the life is ready to be set and it's not a level transition, create the object
         if (lifePickupActive && !isLevelTransition) {
-            lifepickup.CreateLifePickUp();
+            lifepickup.CreateLifePickUp(lifepickup.position);
         }
 
         // Collision detection with life pickup, play sound and prevent another life from being created.
@@ -160,7 +160,7 @@ int main() {
 
             // when the level is transitioning create 
             if (!lifePickupActive) {
-                lifepickup.size = 20;
+                lifepickup.size = 60;
                 lifepickup.position = GenerateRandomPositionOutsideOfUserArea(lifepickup.size);
                 lifePickupActive = true;
             }
@@ -180,7 +180,7 @@ int main() {
                 // When the next level starts, increase the difficult and generate the next set of enemies
                 isLevelTransition = false;
                 difficultyLevel++;
-                lifepickup.CreateLifePickUp();
+                lifepickup.CreateLifePickUp(GenerateRandomPositionOutsideOfUserArea(20));
                 enemies = GenerateEnemies(difficultyLevel);
             }
         }
@@ -191,6 +191,7 @@ int main() {
         } else {
             // Setup Canvas
             BeginDrawing();
+                ClearBackground(WHITE);
                 // Clear canvas to a specific color to avoid flicker
                 DrawTexture(textureManagement.background, 0, 0, WHITE);
                 if (user.CheckHealth()) {
@@ -205,6 +206,7 @@ int main() {
                     continue;  // Skip the rest of the game loop
                 }
                 
+                user.Update(deltaTime);
                 user.CreateCharacter();
                 user.position = user.Controller();
                 // Draw player lives
@@ -217,8 +219,8 @@ int main() {
                 // For each of the enemies created, create their sprite and have them move towards the user
                 for (Enemy &enemy : enemies)
                 {
+                    enemy.Update(deltaTime, user);
                     enemy.CreateEnemy();
-                    enemy.MoveTowards(user);
 
                     // check collision with user
                     if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
@@ -265,6 +267,7 @@ int main() {
     }
     // Upload all loaded sounds
     soundManagement.UnloadSoundManagement();
+    textureManagement.UnloadTextureManagement();
     CloseWindow();
     return 0;
 }
