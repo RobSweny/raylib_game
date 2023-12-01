@@ -10,7 +10,7 @@
 #include <vector>
 
 // Determine the Game Window Width and Height
-Vector2 screenSize = {1200.0f, 800.0f};
+Vector2 screenSize = {1280.0f, 720.0f};
 Vector2 centerOfScreen = { (float)screenSize.x/2, (float)screenSize.y/2 };
 TextureManagement textureManagement;
 SoundManagement soundManagement;
@@ -18,11 +18,19 @@ Animation animation;
 int selectedItemIndex = 0;
 int difficultyLevel = 0;
 float levelClearedTime = GetTime();
+float timeOfDeath = GetTime();
 
 enum GameState {
     MENU,
     PLAYING,
     EXIT
+};
+
+enum EnemyTypes {
+    EASY,
+    MEDIUM,
+    HARD,
+    SPEEDY
 };
 
 GameState currentGameState = MENU;
@@ -52,29 +60,24 @@ bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
 }
 
-Enemy GenerateEasyEnemy()
-{
-    Enemy easyEnemy (GenerateRandomPositionOutsideOfUserArea(0), 40, 0.5F, 1, textureManagement.easyZombieAnimation);
-    return easyEnemy;
-}
-
-Enemy GenerateMediumEnemy()
-{
-    Enemy mediumEnemy (GenerateRandomPositionOutsideOfUserArea(0), 45, 2.0F, 3, textureManagement.mediumZombieAnimation);
-    return mediumEnemy;
-}
-
-Enemy GenerateHardEnemy()
-{
-    Enemy hardEnemy (GenerateRandomPositionOutsideOfUserArea(0), 50, 3.0F, 5, textureManagement.hardZombieAnimation);
-    return hardEnemy;
-}
-
-Enemy GenerateSpeedyEnemy()
-{
-    Enemy speedBois (GenerateRandomPositionOutsideOfUserArea(0), 35, 4.0F, 1, textureManagement.speedyZombieAnimation);
-    return speedBois;
-}
+Enemy GenerateEnemy(EnemyTypes enemyType)
+{   
+    switch (enemyType)
+    {
+        case EASY:
+            return Enemy ( GenerateRandomPositionOutsideOfUserArea(0), 25, 0.5F, 1, textureManagement.easyEnemyAnimation );
+            break;
+        case MEDIUM:  
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(0), 30, 2.0F, 3, textureManagement.mediumEnemyAnimation);
+            break;
+        case HARD:
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(0), 35, 3.0F, 5, textureManagement.hardEnemyAnimation);
+            break;
+        case SPEEDY:  
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(0), 25, 4.0F, 1, textureManagement.speedyEnemyAnimation);
+            break;  
+    }
+} 
 
 // Based on the input parameter of the level of difficulty, we generate enemies.
 // each level that the user passes, a more difficult set of enemies is created
@@ -87,35 +90,35 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
         case 0:
             for (int i = 0; i < 10; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
             }
             break;
         case 1:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
-                enemies.push_back(GenerateMediumEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
+                enemies.push_back(GenerateEnemy(MEDIUM));
             }
             break;
         case 2:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateSpeedyEnemy());
+                enemies.push_back(GenerateEnemy(SPEEDY));
             }
             break;
         case 3:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateMediumEnemy());
-                enemies.push_back(GenerateHardEnemy());
+                enemies.push_back(GenerateEnemy(MEDIUM));
+                enemies.push_back(GenerateEnemy(HARD));
             }
             break;
         case 4:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
-                enemies.push_back(GenerateMediumEnemy());
-                enemies.push_back(GenerateHardEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
+                enemies.push_back(GenerateEnemy(MEDIUM));
+                enemies.push_back(GenerateEnemy(HARD));
             }
             break;
         case 5:
@@ -130,7 +133,7 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 
 int main() {
     // Initialize the Window
-    InitWindow(screenSize.x, screenSize.y, "My Game");
+    InitWindow(screenSize.x, screenSize.y, "Bobble Bob's Last Dance");
     // Setting the Frames Per Second
     SetTargetFPS(60);
     textureManagement.Initialize();
@@ -148,6 +151,9 @@ int main() {
 
         switch (currentGameState) {
             case MENU:
+                ClearBackground(WHITE);
+                // Clear canvas to a specific color to avoid flicker
+                DrawTexture(textureManagement.menu, 0, 0, WHITE);
                 if (IsKeyPressed(KEY_DOWN)) {
                     selectedItemIndex = (selectedItemIndex + 1) % menuItems.size();
                 }
@@ -156,24 +162,31 @@ int main() {
                 }
                 if (IsKeyPressed(KEY_ENTER)) {
                     switch (selectedItemIndex) {
-                        case 0: // "Start Game"
+                        // Start game
+                        case 0:
                             currentGameState = PLAYING;
                             break;
-                        case 1: // "Fullscreen"
+                        // Fullscreen
+                        case 1:
+                            // After we toggle full screen we have to ensure existing variables get updated
+                            ToggleFullscreen();
                             screenSize.x = (float) GetScreenWidth();
                             screenSize.y = (float) GetScreenHeight();
                             centerOfScreen = { screenSize.x / 2, screenSize.y / 2 };
-                            ToggleFullscreen();
                             break;
-                        case 2: // "Exit"
+                        // Exit
+                        case 2:
                             currentGameState = EXIT;
                             break;
                     }
                 }
 
-                for (size_t i = 0; i < menuItems.size(); ++i) {
-                    Color color = (i == selectedItemIndex) ? RED : BLACK;
-                    DrawText(menuItems[i].c_str(), 100, 200 + 40 * i, 40, color);
+                // For each item in menu items
+                for (int i = 0; i < menuItems.size(); ++i) {
+                    // Tenory operator to check if the selectedItemIndex is the created menu item, if it is. Paint it Red.
+                    Color color = (i == selectedItemIndex) ? YELLOW : WHITE;
+                    // Draw the menu item.
+                    DrawText(menuItems[i].c_str(), 100, 200 + 80 * i, 60, color);
                 }
                 break;
             case PLAYING:
@@ -183,7 +196,7 @@ int main() {
                 if (IsKeyPressed(KEY_P)) {
                     isGamePaused = !isGamePaused;
                 }
-
+ 
                 // if the life is ready to be set and it's not a level transition, create the object
                 if (lifePickupActive && !isLevelTransition) {
                     lifepickup.CreateLifePickUp(lifepickup.position);
@@ -227,13 +240,14 @@ int main() {
                         isLevelTransition = false;
                         difficultyLevel++;
                         lifepickup.CreateLifePickUp(GenerateRandomPositionOutsideOfUserArea(20));
+                        // Create the new array of enemies based on the difficulty level
                         enemies = GenerateEnemies(difficultyLevel);
                     }
                 }
 
                 // If the game is passed, draw text on the screen to inform the user
                 if (isGamePaused) {
-                    DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 20) / 2, screenSize.y / 2, 20, BLACK);
+                    DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 60) / 2, screenSize.y / 2, 60, RED);
                 } else {
                     // Setup Canvas
                     BeginDrawing();
@@ -245,26 +259,29 @@ int main() {
                                 soundManagement.StopGameMusic();
                                 soundManagement.GameOverSounds();
                                 gameOverSoundPlayed = true;
+                                timeOfDeath = GetTime();
                             }
                             // Display game over message
-                            DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
+                            DrawText("Game Over!", GetScreenWidth() / 2 - MeasureText("Game Over!", 100) / 2, GetScreenHeight() / 2, 100, WHITE);
+                            if (GetTime() - timeOfDeath > 3.0F)
+                            {
+                                currentGameState = MENU;
+                            }
                             EndDrawing();
                             continue;  // Skip the rest of the game loop
                         }
                         
                         user.Update(deltaTime);
                         user.CreateCharacter();
-                        user.position = user.Controller();
+                        user.Controller();
                         // Draw player lives
                         // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
                         for (int i = 0; i < user.currentHealth; i++) 
-                        {
-                            if (IsWindowFullscreen())
-                            {
-                                DrawRectangle(20 + 50 * i, GetScreenHeight() - 120, 40, 20, RED);
-                            } else {
-                                DrawRectangle(20 + 40 * i, GetScreenHeight() - 30, 35, 10, RED);
-                            }
+                        {   
+                            // Ternory operator to check where to draw the user health 
+                            IsWindowFullscreen() ?
+                            DrawRectangle(20 + 50 * i, GetScreenHeight() - 120, 40, 20, RED) :
+                            DrawRectangle(20 + 40 * i, GetScreenHeight() - 30, 35, 10, RED);
                         }
 
                         // For each of the enemies created, create their sprite and have them move towards the user
@@ -281,6 +298,8 @@ int main() {
                                     soundManagement.PlayOuchSound();
                                     user.LoseHealth();
                                     user.UpdateCooldown();     
+                                } else {
+                                    user.UpdateCooldown();
                                 }
                             }
                         }
@@ -325,7 +344,7 @@ int main() {
         // teardown Canvas
         EndDrawing();
     }
-    // Upload all loaded sounds
+    // Upload all loaded sounds and textures
     soundManagement.UnloadSoundManagement();
     textureManagement.UnloadTextureManagement();
     CloseWindow();

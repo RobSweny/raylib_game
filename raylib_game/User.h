@@ -5,6 +5,7 @@
 #include <math.h>
 #include <vector>
 #include "raylib.h"
+#include <string>
 #include "SoundManagement.h"
 #include "Projectile.h"
 #include "Health.h"
@@ -22,6 +23,7 @@ struct User : Health
     float cooldownTime = 2.0f;
     float bombCooldownTime = 5.0f;
     float lastHitTime;
+    float remainingBombCooldown = 0.0f;
     // Initialize for instant use
     float lastAllDirectionShootTime = -cooldownTime;
     // Array of struct Projectile
@@ -58,9 +60,12 @@ struct User : Health
         if (IsKeyPressed(KEY_SPACE)) ShootInAllDirections();
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) Shoot();
 
-        // Boundary checks
+        // Ensure the user does not go outside of their boundary
+        // If the user x position is less than 0, they are at the far left of the screen and shouldn't pass further
         if (position.x < 0) position.x = 0;
+        // If the user x position is greater than the screen width - the user size, prevent them from moving further right
         if (position.x > GetScreenWidth() - size) position.x = GetScreenWidth() - size;
+        // These are the same case except they relate to height
         if (position.y < 0) position.y = 0;
         if (position.y > GetScreenHeight() - size) position.y = GetScreenHeight() - size;
         return position;
@@ -86,13 +91,10 @@ struct User : Health
     // Update cooldown time, this is called when the user has been hit
     // it is to avoid the collision between enemy and user being called too often
     void UpdateCooldown() {
-        // check if the bool flag is true
-        if (isOnHealthCooldown) {
-            // get the current time and minus it from the last time the user was hit, check if this is greater than the cooldown time (2 seconds)
-            if (GetTime() - lastHitTime >= cooldownTime) {
-                // if the time is greater than 2 seconds
-                isOnHealthCooldown = false;
-            }
+        // get the current time and minus it from the last time the user was hit, check if this is greater than the cooldown time (2 seconds)
+        if (GetTime() - lastHitTime >= cooldownTime) {
+            // if the time is greater than 2 seconds
+            isOnHealthCooldown = false;
         }
     }
 

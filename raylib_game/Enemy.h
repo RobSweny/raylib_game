@@ -11,10 +11,9 @@ struct Enemy : Health
     float speed;
     Animation runAnimation;
 
-    Enemy(Vector2 position, int size, float speed, int maxHealth, const Animation& animation) 
-            : Health { maxHealth, maxHealth},
-            position(position), size(size), speed(speed),
-            runAnimation(animation) {}
+    Enemy(Vector2 position, int size, float speed, int maxHealth, Animation animation) 
+        : Health { maxHealth, maxHealth},
+        position(position), size(size), speed(speed), runAnimation(animation) {}
 
     // Method to update the enemy's state
     void Update(float deltaTime, User user) {
