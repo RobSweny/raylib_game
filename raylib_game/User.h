@@ -57,6 +57,12 @@ struct User : Health
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) position.x += speed;
         if (IsKeyPressed(KEY_SPACE)) ShootInAllDirections();
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) Shoot();
+
+        // Boundary checks
+        if (position.x < 0) position.x = 0;
+        if (position.x > GetScreenWidth() - size) position.x = GetScreenWidth() - size;
+        if (position.y < 0) position.y = 0;
+        if (position.y > GetScreenHeight() - size) position.y = GetScreenHeight() - size;
         return position;
     }
 
