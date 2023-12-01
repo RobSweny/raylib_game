@@ -8,6 +8,7 @@
 #include "SoundManagement.h"
 #include "Projectile.h"
 #include "Health.h"
+#include "Animation.h"
 
 struct User : Health
 {
@@ -15,7 +16,7 @@ struct User : Health
     Vector2 position;
     float speed;
     int maxHealth;
-    int projectileSize;
+    int projectileSize = 5;
     bool isOnHealthCooldown = false;
     // 2 second timer from being hit
     float cooldownTime = 2.0f;
@@ -27,19 +28,24 @@ struct User : Health
     std::vector<Projectile> projectiles{};
     // Include reference to sound management
     SoundManagement& soundManagement;
+    Animation runAnimation;
 
-    User(int size, Vector2 position, float speed, int maxHealth, SoundManagement& soundManagement) 
+    User(int size, Vector2 position, float speed, int maxHealth, SoundManagement& soundManagement, const Animation& animation) 
             : Health { maxHealth, maxHealth },
             size(size), position(position), speed(speed),
-            soundManagement(soundManagement) {
-            }
+            soundManagement(soundManagement),
+            runAnimation(animation) {}
+
+    void Update(float deltaTime) {
+        runAnimation.Update(deltaTime);
+    }
 
     // Creating function for managing the controller
     Vector2 Controller()
     {
         if (IsKeyDown(KEY_LEFT_SHIFT)) 
         {
-            speed = 8.0f;
+            speed = 6.0f;
         }
         else if (IsKeyReleased(KEY_LEFT_SHIFT))
         {
@@ -51,14 +57,6 @@ struct User : Health
         if (IsKeyDown(KEY_RIGHT) || IsKeyDown(KEY_D)) position.x += speed;
         if (IsKeyPressed(KEY_SPACE)) ShootInAllDirections();
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) Shoot();
-        if (IsKeyDown(KEY_LEFT_CONTROL))
-        {
-            size = 25;
-        }
-        else if (IsKeyReleased(KEY_LEFT_CONTROL))
-        {
-            size = 50; 
-        }
         return position;
     }
 
@@ -108,8 +106,7 @@ struct User : Health
     // Creating a character
     void CreateCharacter()
     {
-        // Create Circle
-        DrawCircleV(position, size, MAROON);
+        runAnimation.Draw(position);
     }
 
     // function to shoot a projectile

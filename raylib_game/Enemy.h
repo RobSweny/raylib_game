@@ -2,16 +2,26 @@
 #ifndef ENEMY_H
 #define ENEMY_H
 
+#include "Animation.h"
+
 struct Enemy : Health
 {
     Vector2 position;
     int size;
     float speed;
-    Color color;
+    Animation runAnimation;
 
-    Enemy(Vector2 position, int size, float speed, Color color, int maxHealth) 
+    Enemy(Vector2 position, int size, float speed, int maxHealth, const Animation& animation) 
             : Health { maxHealth, maxHealth},
-            position(position), size(size), speed(speed), color(color) {}
+            position(position), size(size), speed(speed),
+            runAnimation(animation) {}
+
+    // Method to update the enemy's state
+    void Update(float deltaTime, User user) {
+        // Update the animation
+        runAnimation.Update(deltaTime);
+        MoveTowards(user);
+    }
 
     // boolean function that returns when the enemy health is less than or equal to 0
     bool TakeDamage(int damageAmount) {
@@ -41,11 +51,10 @@ struct Enemy : Health
         position.y += direction.y * speed;
     }
 
-    // Creating an Enemy
-    void CreateEnemy()
-    {
-        // Create Circle
-        DrawCircleV(position, size, color);
+    // Method to draw the enemy on the screen
+    void CreateEnemy() {
+        // Draw the run animation at the enemy's current position
+        runAnimation.Draw(position);
     }
 };
 
