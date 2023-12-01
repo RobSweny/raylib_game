@@ -12,12 +12,22 @@
 // Determine the Game Window Width and Height
 Vector2 screenSize = {1200.0f, 800.0f};
 Vector2 centerOfScreen = { (float)screenSize.x/2, (float)screenSize.y/2 };
-int difficultyLevel = 0;
 TextureManagement textureManagement;
 SoundManagement soundManagement;
 Animation animation;
-
+int selectedItemIndex = 0;
+int difficultyLevel = 0;
 float levelClearedTime = GetTime();
+
+enum GameState {
+    MENU,
+    PLAYING,
+    EXIT
+};
+
+GameState currentGameState = MENU;
+std::vector<std::string> menuItems = {"Start Game", "Fullscreen", "Exit Game"};
+int selectedItem = 0;
 
 // bool's to avoid sound repetition
 bool gameOverSoundPlayed = false;
@@ -128,139 +138,189 @@ int main() {
     User user(50, centerOfScreen, 4.0f, 3, soundManagement, textureManagement.playerRunningAnimation);
     LifePickUp lifepickup = { 1, 60, GenerateRandomPositionOutsideOfUserArea(20), textureManagement.heart};
     std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
-    
+
     // The Game Loop
     while (!WindowShouldClose() /*WindowShouldClose returns true if esc is clicked and closes the window*/)
     {
-        float deltaTime = GetFrameTime();
-        // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
-        if (IsKeyPressed(KEY_P)) {
-            isGamePaused = !isGamePaused;
-        }
+        // Update and Draw per frame
+        BeginDrawing();
+        ClearBackground(RAYWHITE);
 
-        // if the life is ready to be set and it's not a level transition, create the object
-        if (lifePickupActive && !isLevelTransition) {
-            lifepickup.CreateLifePickUp(lifepickup.position);
-        }
-
-        // Collision detection with life pickup, play sound and prevent another life from being created.
-        if (lifePickupActive && CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
-            user.GainHealth();
-            lifepickup.LifePickedUp(soundManagement);
-            lifePickupActive = false; // Deactivate the life pickup after collection
-        }
-
-        // If the user clears all the enemies and it's not currently a level transition
-        if (IsLevelCleared(enemies) && !isLevelTransition) {
-            // set the transition
-            isLevelTransition = true;
-            // capture what time the level was cleared, we use this to countdown the next level
-            levelClearedTime = GetTime();
-            soundManagement.PlayCountdownSound();
-
-            // when the level is transitioning create 
-            if (!lifePickupActive) {
-                lifepickup.size = 60;
-                lifepickup.position = GenerateRandomPositionOutsideOfUserArea(lifepickup.size);
-                lifePickupActive = true;
-            }
-        }
-
-        // Check if the enemies list has been cleared
-        if (IsLevelCleared(enemies)) {
-            // Pause the game for 3.5 seconds and introduce the next level
-            if (GetTime() - levelClearedTime < 3.5f) {
-                BeginDrawing();
-                    ClearBackground(RAYWHITE);
-                    DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 50) / 2, GetScreenHeight() / 2, 50, BLACK);
-                EndDrawing();
-                continue;
-            }
-            else {
-                // When the next level starts, increase the difficult and generate the next set of enemies
-                isLevelTransition = false;
-                difficultyLevel++;
-                lifepickup.CreateLifePickUp(GenerateRandomPositionOutsideOfUserArea(20));
-                enemies = GenerateEnemies(difficultyLevel);
-            }
-        }
-
-        // If the game is passed, draw text on the screen to inform the user
-        if (isGamePaused) {
-            DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 20) / 2, screenSize.y / 2, 20, BLACK);
-        } else {
-            // Setup Canvas
-            BeginDrawing();
-                ClearBackground(WHITE);
-                // Clear canvas to a specific color to avoid flicker
-                DrawTexture(textureManagement.background, 0, 0, WHITE);
-                if (user.CheckHealth()) {
-                    if (!gameOverSoundPlayed) {
-                        soundManagement.StopGameMusic();
-                        soundManagement.GameOverSounds();
-                        gameOverSoundPlayed = true;
-                    }
-                    // Display game over message
-                    DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
-                    EndDrawing();
-                    continue;  // Skip the rest of the game loop
+        switch (currentGameState) {
+            case MENU:
+                if (IsKeyPressed(KEY_DOWN)) {
+                    selectedItemIndex = (selectedItemIndex + 1) % menuItems.size();
                 }
-                
-                user.Update(deltaTime);
-                user.CreateCharacter();
-                user.position = user.Controller();
-                // Draw player lives
-                // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
-                for (int i = 0; i < user.currentHealth; i++) 
-                {
-                    DrawRectangle(20 + 40 * i, screenSize.y - 30, 35, 10, RED);
+                if (IsKeyPressed(KEY_UP)) {
+                    selectedItemIndex = (selectedItemIndex - 1 + menuItems.size()) % menuItems.size();
                 }
-
-                // For each of the enemies created, create their sprite and have them move towards the user
-                for (Enemy &enemy : enemies)
-                {
-                    enemy.Update(deltaTime, user);
-                    enemy.CreateEnemy();
-
-                    // check collision with user
-                    if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
-                        // If the user collides with an enemy, play a sound, remove user health and update
-                        // the cooldown for when the user can be hit again.
-                        soundManagement.PlayOuchSound();
-                        user.LoseHealth();
-                        user.UpdateCooldown();
+                if (IsKeyPressed(KEY_ENTER)) {
+                    switch (selectedItemIndex) {
+                        case 0: // "Start Game"
+                            currentGameState = PLAYING;
+                            break;
+                        case 1: // "Fullscreen"
+                            screenSize.x = (float) GetScreenWidth();
+                            screenSize.y = (float) GetScreenHeight();
+                            centerOfScreen = { screenSize.x / 2, screenSize.y / 2 };
+                            ToggleFullscreen();
+                            break;
+                        case 2: // "Exit"
+                            currentGameState = EXIT;
+                            break;
                     }
                 }
-                // iterate over each item in the projectile vector (backwards, as it's furthest away from the user (origin))
-                for (int i = user.projectiles.size() - 1; i >= 0; --i) {
-                    bool projectileHit = false;
-                    user.projectiles[i].position.x += user.projectiles[i].direction.x * user.projectiles[i].speed;
-                    user.projectiles[i].position.y += user.projectiles[i].direction.y * user.projectiles[i].speed;
 
-                    // iterate over the enemies backwards
-                    for (int j = enemies.size() - 1; j >= 0; --j) {
-                        // Check if the projectile position and size collides with the enemy position and size
-                        if (CheckCollisionCircles(user.projectiles[i].position, user.projectileSize, enemies[j].position, enemies[j].size)) {
-                            // if the enemy function 'TakeDamage' returns true, erase the enemy
-                            // this function checks if the current health of the enemy is <= 0
-                            if (enemies[j].TakeDamage(user.projectiles[i].damage)) {
-                                enemies.erase(enemies.begin() + j);
+                for (size_t i = 0; i < menuItems.size(); ++i) {
+                    Color color = (i == selectedItemIndex) ? RED : BLACK;
+                    DrawText(menuItems[i].c_str(), 100, 200 + 40 * i, 40, color);
+                }
+                break;
+            case PLAYING:
+            {
+                float deltaTime = GetFrameTime();
+                // If the user presses 'P' the game is passed. The boolean sets its state as the opposite of the current state.
+                if (IsKeyPressed(KEY_P)) {
+                    isGamePaused = !isGamePaused;
+                }
+
+                // if the life is ready to be set and it's not a level transition, create the object
+                if (lifePickupActive && !isLevelTransition) {
+                    lifepickup.CreateLifePickUp(lifepickup.position);
+                }
+
+                // Collision detection with life pickup, play sound and prevent another life from being created.
+                if (lifePickupActive && CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
+                    user.GainHealth();
+                    lifepickup.LifePickedUp(soundManagement);
+                    lifePickupActive = false; // Deactivate the life pickup after collection
+                }
+
+                // If the user clears all the enemies and it's not currently a level transition
+                if (IsLevelCleared(enemies) && !isLevelTransition) {
+                    // set the transition
+                    isLevelTransition = true;
+                    // capture what time the level was cleared, we use this to countdown the next level
+                    levelClearedTime = GetTime();
+                    soundManagement.PlayCountdownSound();
+
+                    // when the level is transitioning create 
+                    if (!lifePickupActive) {
+                        lifepickup.size = 60;
+                        lifepickup.position = GenerateRandomPositionOutsideOfUserArea(lifepickup.size);
+                        lifePickupActive = true;
+                    }
+                }
+
+                // Check if the enemies list has been cleared
+                if (IsLevelCleared(enemies)) {
+                    // Pause the game for 3.5 seconds and introduce the next level
+                    if (GetTime() - levelClearedTime < 3.5f) {
+                        BeginDrawing();
+                            ClearBackground(RAYWHITE);
+                            DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 75) / 2, GetScreenHeight() / 2, 50, BLACK);
+                        EndDrawing();
+                        continue;
+                    }
+                    else {
+                        // When the next level starts, increase the difficult and generate the next set of enemies
+                        isLevelTransition = false;
+                        difficultyLevel++;
+                        lifepickup.CreateLifePickUp(GenerateRandomPositionOutsideOfUserArea(20));
+                        enemies = GenerateEnemies(difficultyLevel);
+                    }
+                }
+
+                // If the game is passed, draw text on the screen to inform the user
+                if (isGamePaused) {
+                    DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 20) / 2, screenSize.y / 2, 20, BLACK);
+                } else {
+                    // Setup Canvas
+                    BeginDrawing();
+                        ClearBackground(WHITE);
+                        // Clear canvas to a specific color to avoid flicker
+                        DrawTexture(textureManagement.background, 0, 0, WHITE);
+                        if (user.CheckHealth()) {
+                            if (!gameOverSoundPlayed) {
+                                soundManagement.StopGameMusic();
+                                soundManagement.GameOverSounds();
+                                gameOverSoundPlayed = true;
                             }
-                            // Break out of the loop if an enemy has been hit.
-                            projectileHit = true;
-                            break; 
+                            // Display game over message
+                            DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
+                            EndDrawing();
+                            continue;  // Skip the rest of the game loop
                         }
-                    }
-                
-                    // Check if the projectile has hit an enemy
-                    if (projectileHit) {
-                        // If the projectile has hit an enemy, remove it from the projectiles vector
-                        user.projectiles.erase(user.projectiles.begin() + i); // Remove the used projectile
-                    } else {
-                        // If the projectile didn't hit an enemy, draw it at its new position
-                        user.projectiles[i].Draw();
-                    }
+                        
+                        user.Update(deltaTime);
+                        user.CreateCharacter();
+                        user.position = user.Controller();
+                        // Draw player lives
+                        // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
+                        for (int i = 0; i < user.currentHealth; i++) 
+                        {
+                            if (IsWindowFullscreen())
+                            {
+                                DrawRectangle(20 + 50 * i, GetScreenHeight() - 120, 40, 20, RED);
+                            } else {
+                                DrawRectangle(20 + 40 * i, GetScreenHeight() - 30, 35, 10, RED);
+                            }
+                        }
+
+                        // For each of the enemies created, create their sprite and have them move towards the user
+                        for (Enemy &enemy : enemies)
+                        {
+                            enemy.Update(deltaTime, user);
+                            enemy.CreateEnemy();
+
+                            // check collision with user
+                            if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
+                                if (!user.isOnHealthCooldown) {
+                                    // If the user collides with an enemy, play a sound, remove user health and update
+                                    // the cooldown for when the user can be hit again.
+                                    soundManagement.PlayOuchSound();
+                                    user.LoseHealth();
+                                    user.UpdateCooldown();     
+                                }
+                            }
+                        }
+                        // iterate over each item in the projectile vector (backwards, as it's furthest away from the user (origin))
+                        for (int i = user.projectiles.size() - 1; i >= 0; --i) {
+                            bool projectileHit = false;
+                            user.projectiles[i].position.x += user.projectiles[i].direction.x * user.projectiles[i].speed;
+                            user.projectiles[i].position.y += user.projectiles[i].direction.y * user.projectiles[i].speed;
+
+                            // iterate over the enemies backwards
+                            for (int j = enemies.size() - 1; j >= 0; --j) {
+                                // Check if the projectile position and size collides with the enemy position and size
+                                if (CheckCollisionCircles(user.projectiles[i].position, user.projectileSize, enemies[j].position, enemies[j].size)) {
+                                    // if the enemy function 'TakeDamage' returns true, erase the enemy
+                                    // this function checks if the current health of the enemy is <= 0
+                                    if (enemies[j].TakeDamage(user.projectiles[i].damage)) {
+                                        enemies.erase(enemies.begin() + j);
+                                    }
+                                    // Break out of the loop if an enemy has been hit.
+                                    projectileHit = true;
+                                    break; 
+                                }
+                            }
+                        
+                            // Check if the projectile has hit an enemy
+                            if (projectileHit) {
+                                // If the projectile has hit an enemy, remove it from the projectiles vector
+                                user.projectiles.erase(user.projectiles.begin() + i); // Remove the used projectile
+                            } else {
+                                // If the projectile didn't hit an enemy, draw it at its new position
+                                user.projectiles[i].Draw();
+                            }
+                        }
                 }
+                break;
+            }
+            case EXIT:
+                EndDrawing();
+                CloseWindow();
+                return 0;
         }
         // teardown Canvas
         EndDrawing();
