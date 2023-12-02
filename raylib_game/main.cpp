@@ -10,14 +10,16 @@
 #include <vector>
 
 // Determine the Game Window Width and Height
-Vector2 screenSize = {1200.0f, 800.0f};
+Vector2 screenSize = {1280.0f, 720.0f};
 Vector2 centerOfScreen = { (float)screenSize.x/2, (float)screenSize.y/2 };
 TextureManagement textureManagement;
 SoundManagement soundManagement;
 Animation animation;
+LifePickUp lifepickup;
 int selectedItemIndex = 0;
 int difficultyLevel = 0;
 float levelClearedTime = GetTime();
+float timeOfDeath = GetTime();
 
 enum GameState {
     MENU,
@@ -25,26 +27,34 @@ enum GameState {
     EXIT
 };
 
+enum EnemyTypes {
+    EASY,
+    MEDIUM,
+    HARD,
+    SPEEDY
+};
+
 GameState currentGameState = MENU;
 std::vector<std::string> menuItems = {"Start Game", "Fullscreen", "Exit Game"};
 int selectedItem = 0;
 
-// bool's to avoid sound repetition
+// bool's to avoid repetition
 bool gameOverSoundPlayed = false;
 bool isGamePaused = false;
 bool isLevelTransition = false;
 bool lifePickupActive = false;
+bool IsLifePickUpDraw = false;
    
 // Generate a random position for each enemy
-Vector2 GenerateRandomPositionOutsideOfUserArea(int edge)
+Vector2 GenerateRandomPositionOutsideOfUserArea(int edge, int userRadius)
 {
     Vector2 position;
     do {
         // Get random number for the x and y position, we do this until we find a position
-        // that doesn't overlap with the user position with an additional radius of 200 around the user. 
+        // that doesn't overlap with the user position with an additional radius of parameter userRadius around the user. 
         position.x = GetRandomValue(0, GetScreenWidth() - edge);
         position.y = GetRandomValue(0, GetScreenHeight() - edge);
-    } while (CheckCollisionCircles(position, 50, centerOfScreen, 200));
+    } while (CheckCollisionCircles(position, 50, centerOfScreen, userRadius));
     return position; 
 }
 
@@ -52,29 +62,24 @@ bool IsLevelCleared(const std::vector<Enemy>& enemies) {
     return enemies.empty();
 }
 
-Enemy GenerateEasyEnemy()
-{
-    Enemy easyEnemy (GenerateRandomPositionOutsideOfUserArea(0), 40, 0.5F, 1, textureManagement.easyZombieAnimation);
-    return easyEnemy;
-}
-
-Enemy GenerateMediumEnemy()
-{
-    Enemy mediumEnemy (GenerateRandomPositionOutsideOfUserArea(0), 45, 2.0F, 3, textureManagement.mediumZombieAnimation);
-    return mediumEnemy;
-}
-
-Enemy GenerateHardEnemy()
-{
-    Enemy hardEnemy (GenerateRandomPositionOutsideOfUserArea(0), 50, 3.0F, 5, textureManagement.hardZombieAnimation);
-    return hardEnemy;
-}
-
-Enemy GenerateSpeedyEnemy()
-{
-    Enemy speedBois (GenerateRandomPositionOutsideOfUserArea(0), 35, 4.0F, 1, textureManagement.speedyZombieAnimation);
-    return speedBois;
-}
+Enemy GenerateEnemy(EnemyTypes enemyType)
+{   
+    switch (enemyType)
+    {
+        case EASY:
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(25, 200), 20, 0.5F, 1, textureManagement.easyEnemyAnimation );
+            break;
+        case MEDIUM:  
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(30, 200), 25, 2.0F, 3, textureManagement.mediumEnemyAnimation);
+            break;
+        case HARD:
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(35, 200), 30, 3.0F, 5, textureManagement.hardEnemyAnimation);
+            break;
+        case SPEEDY:  
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(25, 500), 20, 4.0F, 1, textureManagement.speedyEnemyAnimation);
+            break;  
+    }
+} 
 
 // Based on the input parameter of the level of difficulty, we generate enemies.
 // each level that the user passes, a more difficult set of enemies is created
@@ -87,35 +92,35 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
         case 0:
             for (int i = 0; i < 10; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
             }
             break;
         case 1:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
-                enemies.push_back(GenerateMediumEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
+                enemies.push_back(GenerateEnemy(MEDIUM));
             }
             break;
         case 2:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateSpeedyEnemy());
+                enemies.push_back(GenerateEnemy(SPEEDY));
             }
             break;
         case 3:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateMediumEnemy());
-                enemies.push_back(GenerateHardEnemy());
+                enemies.push_back(GenerateEnemy(MEDIUM));
+                enemies.push_back(GenerateEnemy(HARD));
             }
             break;
         case 4:
             for (int i = 0; i < enemiesToGenerate; i++)
             {
-                enemies.push_back(GenerateEasyEnemy());
-                enemies.push_back(GenerateMediumEnemy());
-                enemies.push_back(GenerateHardEnemy());
+                enemies.push_back(GenerateEnemy(EASY));
+                enemies.push_back(GenerateEnemy(MEDIUM));
+                enemies.push_back(GenerateEnemy(HARD));
             }
             break;
         case 5:
@@ -130,13 +135,12 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 
 int main() {
     // Initialize the Window
-    InitWindow(screenSize.x, screenSize.y, "My Game");
+    InitWindow(screenSize.x, screenSize.y, "Bobble Bob's Last Dance");
     // Setting the Frames Per Second
     SetTargetFPS(60);
     textureManagement.Initialize();
     soundManagement.PlayGameMusic();
     User user(50, centerOfScreen, 4.0f, 3, soundManagement, textureManagement.playerRunningAnimation);
-    LifePickUp lifepickup = { 1, 60, GenerateRandomPositionOutsideOfUserArea(20), textureManagement.heart};
     std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
 
     // The Game Loop
@@ -148,6 +152,9 @@ int main() {
 
         switch (currentGameState) {
             case MENU:
+                ClearBackground(WHITE);
+                // Clear canvas to a specific color to avoid flicker
+                DrawTexture(textureManagement.menu, 0, 0, WHITE);
                 if (IsKeyPressed(KEY_DOWN)) {
                     selectedItemIndex = (selectedItemIndex + 1) % menuItems.size();
                 }
@@ -156,24 +163,31 @@ int main() {
                 }
                 if (IsKeyPressed(KEY_ENTER)) {
                     switch (selectedItemIndex) {
-                        case 0: // "Start Game"
+                        // Start game
+                        case 0:
                             currentGameState = PLAYING;
                             break;
-                        case 1: // "Fullscreen"
+                        // Fullscreen
+                        case 1:
+                            // After we toggle full screen we have to ensure existing variables get updated
+                            ToggleFullscreen();
                             screenSize.x = (float) GetScreenWidth();
                             screenSize.y = (float) GetScreenHeight();
                             centerOfScreen = { screenSize.x / 2, screenSize.y / 2 };
-                            ToggleFullscreen();
                             break;
-                        case 2: // "Exit"
+                        // Exit
+                        case 2:
                             currentGameState = EXIT;
                             break;
                     }
                 }
 
-                for (size_t i = 0; i < menuItems.size(); ++i) {
-                    Color color = (i == selectedItemIndex) ? RED : BLACK;
-                    DrawText(menuItems[i].c_str(), 100, 200 + 40 * i, 40, color);
+                // For each item in menu items
+                for (int i = 0; i < menuItems.size(); ++i) {
+                    // Tenory operator to check if the selectedItemIndex is the created menu item, if it is. Paint it Red.
+                    Color color = (i == selectedItemIndex) ? YELLOW : WHITE;
+                    // Draw the menu item.
+                    DrawText(menuItems[i].c_str(), 100, 200 + 80 * i, 60, color);
                 }
                 break;
             case PLAYING:
@@ -184,94 +198,106 @@ int main() {
                     isGamePaused = !isGamePaused;
                 }
 
-                // if the life is ready to be set and it's not a level transition, create the object
-                if (lifePickupActive && !isLevelTransition) {
-                    lifepickup.CreateLifePickUp(lifepickup.position);
-                }
-
-                // Collision detection with life pickup, play sound and prevent another life from being created.
-                if (lifePickupActive && CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
-                    user.GainHealth();
-                    lifepickup.LifePickedUp(soundManagement);
-                    lifePickupActive = false; // Deactivate the life pickup after collection
-                }
-
-                // If the user clears all the enemies and it's not currently a level transition
-                if (IsLevelCleared(enemies) && !isLevelTransition) {
-                    // set the transition
-                    isLevelTransition = true;
-                    // capture what time the level was cleared, we use this to countdown the next level
-                    levelClearedTime = GetTime();
-                    soundManagement.PlayCountdownSound();
-
-                    // when the level is transitioning create 
-                    if (!lifePickupActive) {
-                        lifepickup.size = 60;
-                        lifepickup.position = GenerateRandomPositionOutsideOfUserArea(lifepickup.size);
-                        lifePickupActive = true;
-                    }
-                }
-
-                // Check if the enemies list has been cleared
-                if (IsLevelCleared(enemies)) {
-                    // Pause the game for 3.5 seconds and introduce the next level
-                    if (GetTime() - levelClearedTime < 3.5f) {
-                        BeginDrawing();
-                            ClearBackground(RAYWHITE);
-                            DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 75) / 2, GetScreenHeight() / 2, 50, BLACK);
-                        EndDrawing();
-                        continue;
-                    }
-                    else {
-                        // When the next level starts, increase the difficult and generate the next set of enemies
-                        isLevelTransition = false;
-                        difficultyLevel++;
-                        lifepickup.CreateLifePickUp(GenerateRandomPositionOutsideOfUserArea(20));
-                        enemies = GenerateEnemies(difficultyLevel);
-                    }
-                }
-
                 // If the game is passed, draw text on the screen to inform the user
                 if (isGamePaused) {
-                    DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 20) / 2, screenSize.y / 2, 20, BLACK);
+                    DrawText("Game Paused", screenSize.x / 2 - MeasureText("Game Paused", 60) / 2, screenSize.y / 2, 60, RED);
                 } else {
                     // Setup Canvas
                     BeginDrawing();
                         ClearBackground(WHITE);
                         // Clear canvas to a specific color to avoid flicker
                         DrawTexture(textureManagement.background, 0, 0, WHITE);
+
+                        // If the life pick up is active
+                        if (lifePickupActive) {
+                            // If it's not drawn, generate a random position for it
+                            if (!IsLifePickUpDraw)
+                            {
+                                lifepickup.position = GenerateRandomPositionOutsideOfUserArea(60, 200);
+                                // set drawn to true to avoid another random position appearing
+                                IsLifePickUpDraw = true;
+                            }
+                            // Set the texture to the heart
+                            lifepickup.heartTexture = textureManagement.heart;
+                            // Drawn the life
+                            lifepickup.CreateLifePickUp();
+                        }
+
+                        // If the user clears all the enemies and it's not currently a level transition
+                        if (IsLevelCleared(enemies) && !isLevelTransition) {
+                            // set the transition
+                            isLevelTransition = true;
+                            // capture what time the level was cleared, we use this to countdown the next level
+                            levelClearedTime = GetTime();
+                            soundManagement.PlayCountdownSound();
+                        }
+
+                        // Check if the enemies list has been cleared
+                        if (IsLevelCleared(enemies)) {
+                            // Pause the game for 3.5 seconds and introduce the next level
+                            if (GetTime() - levelClearedTime < 3.5f) {
+                                BeginDrawing();
+                                    ClearBackground(RAYWHITE);
+                                    DrawText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), GetScreenWidth() / 2 - MeasureText(("Level " + std::to_string(difficultyLevel + 1)).c_str(), 80) / 2, GetScreenHeight() / 2, 80, WHITE);
+                                EndDrawing();
+                                continue;
+                            }
+                            else {
+                                // When the next level starts, increase the difficult and generate the next set of enemies
+                                isLevelTransition = false;
+                                difficultyLevel++;
+                                // Create the new array of enemies based on the difficulty level
+                                enemies = GenerateEnemies(difficultyLevel);
+                                lifePickupActive = true;
+                                IsLifePickUpDraw = false;
+                            }
+                        }
+
                         if (user.CheckHealth()) {
                             if (!gameOverSoundPlayed) {
                                 soundManagement.StopGameMusic();
                                 soundManagement.GameOverSounds();
                                 gameOverSoundPlayed = true;
+                                timeOfDeath = GetTime();
                             }
                             // Display game over message
-                            DrawText("Game Over", screenSize.x / 2 , screenSize.y / 2, 20, BLACK);
+                            DrawText("Game Over!", GetScreenWidth() / 2 - MeasureText("Game Over!", 100) / 2, GetScreenHeight() / 2, 100, WHITE);
+                            if (GetTime() - timeOfDeath > 3.0F)
+                            {
+                                currentGameState = MENU;
+                            }
                             EndDrawing();
                             continue;  // Skip the rest of the game loop
                         }
                         
                         user.Update(deltaTime);
                         user.CreateCharacter();
-                        user.position = user.Controller();
+                        user.Controller();
                         // Draw player lives
                         // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
                         for (int i = 0; i < user.currentHealth; i++) 
-                        {
-                            if (IsWindowFullscreen())
-                            {
-                                DrawRectangle(20 + 50 * i, GetScreenHeight() - 120, 40, 20, RED);
-                            } else {
-                                DrawRectangle(20 + 40 * i, GetScreenHeight() - 30, 35, 10, RED);
-                            }
+                        {   
+                            // Ternory operator to check where to draw the user health 
+                            IsWindowFullscreen() ?
+                            DrawRectangle(20 + 50 * i, GetScreenHeight() - 60, 40, 20, RED) :
+                            DrawRectangle(20 + 40 * i, GetScreenHeight() - 30, 35, 10, RED);
+                        }
+
+                        // Collision detection with life pickup, play sound and prevent another life from being created.
+                        if (lifePickupActive && CheckCollisionCircles(user.position, user.size, lifepickup.position, lifepickup.size)) {
+                            user.GainHealth();
+                            lifepickup.LifePickedUp(soundManagement);
+                            lifePickupActive = false; // Deactivate the life pickup after collection
                         }
 
                         // For each of the enemies created, create their sprite and have them move towards the user
                         for (Enemy &enemy : enemies)
                         {
-                            enemy.Update(deltaTime, user);
+                            enemy.Update(deltaTime);
                             enemy.CreateEnemy();
+                            enemy.MoveTowards(user);
+
+                            DrawCircle(enemy.position.x, enemy.position.y, enemy.size, BLUE);
 
                             // check collision with user
                             if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
@@ -281,6 +307,8 @@ int main() {
                                     soundManagement.PlayOuchSound();
                                     user.LoseHealth();
                                     user.UpdateCooldown();     
+                                } else {
+                                    user.UpdateCooldown();
                                 }
                             }
                         }
@@ -325,7 +353,7 @@ int main() {
         // teardown Canvas
         EndDrawing();
     }
-    // Upload all loaded sounds
+    // Upload all loaded sounds and textures
     soundManagement.UnloadSoundManagement();
     textureManagement.UnloadTextureManagement();
     CloseWindow();

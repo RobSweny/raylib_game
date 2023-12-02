@@ -20,7 +20,7 @@ struct Health
 
     void GainHealth()
     {
-        if (currentHealth != maxHealth)
+        if (currentHealth <= maxHealth)
         {
             currentHealth++;
         }
