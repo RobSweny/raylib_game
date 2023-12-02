@@ -297,8 +297,6 @@ int main() {
                             enemy.CreateEnemy();
                             enemy.MoveTowards(user);
 
-                            DrawCircle(enemy.position.x, enemy.position.y, enemy.size, BLUE);
-
                             // check collision with user
                             if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
                                 if (!user.isOnHealthCooldown) {
