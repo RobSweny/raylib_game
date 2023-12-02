@@ -16,10 +16,9 @@ struct Enemy : Health
         position(position), size(size), speed(speed), runAnimation(animation) {}
 
     // Method to update the enemy's state
-    void Update(float deltaTime, User user) {
+    void Update(float deltaTime) {
         // Update the animation
         runAnimation.Update(deltaTime);
-        MoveTowards(user);
     }
 
     // boolean function that returns when the enemy health is less than or equal to 0

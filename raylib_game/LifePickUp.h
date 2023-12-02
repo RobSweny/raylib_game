@@ -9,14 +9,15 @@ struct LifePickUp
     int value;
     int size;
     Vector2 position;
-    Texture2D &heartTexture;
+    Texture2D heartTexture;
 
-    LifePickUp(int value, int size, Vector2 position, Texture2D &heartTexture)
-        : value(value), size(size), position(position), heartTexture(heartTexture) {}
+    // default constructor
+    LifePickUp() : value(0), size(0), position({0, 0}), heartTexture({0}) {}
 
-    void CreateLifePickUp(Vector2 position)
+    void CreateLifePickUp()
     {
-        DrawTexture(heartTexture, position.x, position.y, RED);
+        //DrawCircle(position.x, position.y, 100, RED);
+        DrawTexture(heartTexture, position.x, position.y, WHITE);
     }
     
     // When a life is picked up, set the size to 0 and play a pick up life sound.

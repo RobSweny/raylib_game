@@ -16,7 +16,7 @@ struct User : Health
     int size;
     Vector2 position;
     float speed;
-    int maxHealth;
+    int maxHealth = 5;
     int projectileSize = 5;
     bool isOnHealthCooldown = false;
     // 2 second timer from being hit
@@ -32,8 +32,8 @@ struct User : Health
     SoundManagement& soundManagement;
     Animation runAnimation;
 
-    User(int size, Vector2 position, float speed, int maxHealth, SoundManagement& soundManagement, const Animation& animation) 
-            : Health { maxHealth, maxHealth },
+    User(int size, Vector2 position, float speed, int currentHealth, SoundManagement& soundManagement, const Animation& animation) 
+            : Health { maxHealth, currentHealth },
             size(size), position(position), speed(speed),
             soundManagement(soundManagement),
             runAnimation(animation) {}
