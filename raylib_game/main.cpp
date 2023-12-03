@@ -67,16 +67,16 @@ Enemy GenerateEnemy(EnemyTypes enemyType)
     switch (enemyType)
     {
         case EASY:
-            return Enemy (GenerateRandomPositionOutsideOfUserArea(25, 200), 20, 0.5F, 1, textureManagement.easyEnemyAnimation );
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(40, 200), 40, 0.5F, 1, textureManagement.easyEnemyAnimation );
             break;
         case MEDIUM:  
-            return Enemy (GenerateRandomPositionOutsideOfUserArea(30, 200), 25, 2.0F, 3, textureManagement.mediumEnemyAnimation);
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(25, 200), 25, 2.0F, 3, textureManagement.mediumEnemyAnimation);
             break;
         case HARD:
-            return Enemy (GenerateRandomPositionOutsideOfUserArea(35, 200), 30, 3.0F, 5, textureManagement.hardEnemyAnimation);
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(30, 200), 30, 3.0F, 5, textureManagement.hardEnemyAnimation);
             break;
         case SPEEDY:  
-            return Enemy (GenerateRandomPositionOutsideOfUserArea(25, 500), 20, 4.0F, 1, textureManagement.speedyEnemyAnimation);
+            return Enemy (GenerateRandomPositionOutsideOfUserArea(20, 500), 20, 4.0F, 1, textureManagement.speedyEnemyAnimation);
             break;  
     }
 } 
@@ -86,7 +86,7 @@ Enemy GenerateEnemy(EnemyTypes enemyType)
 std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
 {
     std::vector<Enemy> enemies{};
-    int enemiesToGenerate = levelOfDifficulty * 10; 
+    int enemiesToGenerate = levelOfDifficulty * 5; 
     switch (levelOfDifficulty)
     {
         case 0:
@@ -112,7 +112,7 @@ std::vector<Enemy> GenerateEnemies(int levelOfDifficulty)
             for (int i = 0; i < enemiesToGenerate; i++)
             {
                 enemies.push_back(GenerateEnemy(MEDIUM));
-                enemies.push_back(GenerateEnemy(HARD));
+                enemies.push_back(GenerateEnemy(SPEEDY));
             }
             break;
         case 4:
@@ -140,7 +140,7 @@ int main() {
     SetTargetFPS(60);
     textureManagement.Initialize();
     soundManagement.PlayGameMusic();
-    User user(50, centerOfScreen, 4.0f, 3, soundManagement, textureManagement.playerRunningAnimation);
+    User user(30, centerOfScreen, 4.0f, 3, soundManagement, textureManagement.playerRunningAnimation);
     std::vector<Enemy> enemies = GenerateEnemies(difficultyLevel);
 
     // The Game Loop
@@ -189,6 +189,11 @@ int main() {
                     // Draw the menu item.
                     DrawText(menuItems[i].c_str(), 100, 200 + 80 * i, 60, color);
                 }
+
+                // Display the control instructions
+                DrawText("W,A,S,D to move Bob", 100, GetScreenHeight() - 140, 35, WHITE);
+                DrawText("Left-click to shoot", 100, GetScreenHeight() - 100, 35, WHITE);
+                DrawText("Spacebar for bomb (every 5 seconds)", 100, GetScreenHeight() - 60, 35, WHITE);
                 break;
             case PLAYING:
             {
@@ -261,9 +266,29 @@ int main() {
                                 timeOfDeath = GetTime();
                             }
                             // Display game over message
-                            DrawText("Game Over!", GetScreenWidth() / 2 - MeasureText("Game Over!", 100) / 2, GetScreenHeight() / 2, 100, WHITE);
+                            DrawText("Game Over!", screenSize.x / 2 - MeasureText("Game Over!", 100) / 2, screenSize.y / 2, 100, WHITE);
                             if (GetTime() - timeOfDeath > 3.0F)
                             {
+                                // Reset variables
+                                selectedItemIndex = 0;
+                                difficultyLevel = 0;
+                                levelClearedTime = GetTime();
+                                // reset all bools
+                                gameOverSoundPlayed = false;
+                                isGamePaused = false;
+                                isLevelTransition = false;
+                                lifePickupActive = false;
+                                IsLifePickUpDraw = false;
+                                soundManagement.StopGameOverMusic();
+                                // reset user variables
+                                user.position = centerOfScreen;
+                                user.maxHealth = 5;
+                                user.currentHealth = 3;
+                                // reset enemy variables
+                                enemies.clear();
+                                enemies = GenerateEnemies(difficultyLevel);
+                                // life pick up reset
+                                lifepickup.value = 1;
                                 currentGameState = MENU;
                             }
                             EndDrawing();
@@ -273,6 +298,7 @@ int main() {
                         user.Update(deltaTime);
                         user.CreateCharacter();
                         user.Controller();
+
                         // Draw player lives
                         // https://github.com/raysan5/raylib-games/blob/master/classics/src/arkanoid.c
                         for (int i = 0; i < user.currentHealth; i++) 
@@ -293,10 +319,9 @@ int main() {
                         // For each of the enemies created, create their sprite and have them move towards the user
                         for (Enemy &enemy : enemies)
                         {
-                            enemy.Update(deltaTime);
                             enemy.CreateEnemy();
-                            enemy.MoveTowards(user);
-
+                            enemy.Update(deltaTime, user);
+                            
                             // check collision with user
                             if (CheckCollisionCircles(user.position, user.size, enemy.position, enemy.size)) {
                                 if (!user.isOnHealthCooldown) {

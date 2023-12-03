@@ -16,7 +16,6 @@ struct LifePickUp
 
     void CreateLifePickUp()
     {
-        //DrawCircle(position.x, position.y, 100, RED);
         DrawTexture(heartTexture, position.x, position.y, WHITE);
     }
     

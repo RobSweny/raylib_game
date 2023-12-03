@@ -111,6 +111,14 @@ struct User : Health
         }
     }
 
+    void GainHealth() {
+        // if not on health cooldown and the user health is greater than 0
+        if (currentHealth < maxHealth) 
+        {
+            currentHealth++;
+        }
+    }
+
     // Creating a character
     void CreateCharacter()
     {

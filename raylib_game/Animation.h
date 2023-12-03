@@ -3,7 +3,9 @@
 
 #include "raylib.h"
 
+// The animation class was created from following a series of youtube tutorials, namely
 // https://www.youtube.com/watch?v=weYACOm6d8Y
+// https://www.youtube.com/watch?v=x3y16-cShdQ
 struct Animation {
     Texture2D spriteSheet;
     Rectangle frameRec;
@@ -24,22 +26,29 @@ struct Animation {
           currentFrame(0),
           timer(0.0f) {}
 
-    // Update the animation based on the delta time since the last frame.
+    // Update the animation based on the delta time since the last frame
     void Update(float deltaTime) {
-        timer += deltaTime; // Increment the timer by the elapsed time.
-        if (timer >= frameTime) { // Check if the frame time has elapsed.
-            timer = 0.0f; // Reset the timer.
-            currentFrame++; // Move to the next frame.
-            if (currentFrame >= maxFrames) { // Check if the last frame has been reached.
-                currentFrame = 0; // Loop back to the first frame.
+        // Increment the timer by the elapsed time
+        timer += deltaTime; 
+        // Check if the frame time has elapsed
+        if (timer >= frameTime) { 
+            // Reset the timer
+            timer = 0.0f; 
+            // Move to the next frame
+            currentFrame++; 
+            // Check if the last frame has been reached
+            if (currentFrame >= maxFrames) { 
+                // Loop back to the first frame
+                currentFrame = 0; 
             }
-            frameRec.x = currentFrame * frameRec.width; // Update the x position of the frame rectangle.
+            // Update the x position of the frame rectangle
+            frameRec.x = currentFrame * frameRec.width; 
         }
     }
 
-    // Draw the current frame of the animation at a given position on the screen.
+    // Draw the current frame of the animation at a given position on the screen
     void Draw(Vector2 position, Color tint = WHITE) {
-        // Draw the part of the sprite sheet defined by frameRec at the given position, with the given tint color.
+        // Draw the part of the sprite sheet defined by frameRec at the given position, with the given tint color
         DrawTextureRec(spriteSheet, frameRec, position, tint);
     }
 };
