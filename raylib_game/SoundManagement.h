@@ -69,6 +69,11 @@ struct SoundManagement
         PlaySound(gameOverMusic);
     }
 
+    void StopGameOverMusic() {
+        StopSound(gameOver);
+        StopSound(gameOverMusic);
+    }
+
     void UnloadSoundManagement()
     {
         UnloadSound(gameMusic);
